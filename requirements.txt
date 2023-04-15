@@ -1,0 +1,8 @@
+notebook
+scikit-learn
+xgboost
+matplotlib
+seaborn
+pandas
+pymongoarrow
+python-dotenv
