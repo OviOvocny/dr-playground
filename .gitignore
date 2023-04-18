@@ -1,7 +1,7 @@
 .env
 .venv
 floor/*
-cache/*
+cache/**/*.parquet
 *.parquet
 .ipynb_checkpoints
 
