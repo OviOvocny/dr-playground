@@ -15,7 +15,7 @@ from .flatten import flatten as transform_flatten_save
 # analyze TLS certificates
 from .tls import tls as transform_tls
 # calculate length of domain name
-from .lexical import name_length as transform_name_length
+from .lexical import lex as transform_lexical
 # calculate entropy from inner octets of IP addresses
 from .ip_entropy import ip_entropy as transform_ip_entropy
 # count number of unique countries

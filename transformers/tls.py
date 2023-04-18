@@ -60,6 +60,8 @@ def analyze_tls(item: dict, collection_data: datetime.datetime) -> dict:
     # We dont hane tls data for this domain
     if item is None:
         features = { 
+            "has_tls": False,
+            "chain_len": None,
                 "tls_version_score": None,                 # Evaluated TLS version
                 "cipher_score": None,                           # Evaluated cipher
                 "root_crt_validity__len": None,       # Total validity time of root certificate
@@ -224,15 +226,17 @@ def analyze_tls(item: dict, collection_data: datetime.datetime) -> dict:
     
     ### roud float valuet to 1 decimal place ###
     mean_cert_len = round(mean_cert_len, 1)
-    CA_ratio = round(CA_ratio, 1)
-    percentage_of_policies = round(percentage_of_policies, 1)
+    #CA_ratio = round(CA_ratio, 1)
+    #percentage_of_policies = round(percentage_of_policies, 1)
     
         
-    
+
         
         
     # Return dictionary with all features
     features = { 
+                "has_tls": True,                                           # Has TLS
+                "chain_len": item['count'],                                # Length of certificate chain
                 "tls_version_score": tls_version_score,                 # Evaluated TLS version
                 "cipher_score": cipher_score,                           # Evaluated cipher
                 "root_crt_validity__len": root_crt_validity__len,       # Total validity time of root certificate

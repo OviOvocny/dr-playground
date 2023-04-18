@@ -56,7 +56,7 @@ tls_data = {
         ("validity_end", timestamp('ms')),
         ("extension_count", int64()),
         ("extensions", list_(struct([
-            ("critical", bool_()),
+            ("critical", int64()),
             ("name", string()),
             ("value", string()),
         ]))),
@@ -69,6 +69,9 @@ ip_data = struct([
         ("latitude", float64()),
         ("longitude", float64()),
         ("asn", int64()),
+    ])),
+    ("remarks", struct([
+        ("average_rtt", float64()),
     ])),
 ])
 

@@ -40,5 +40,6 @@ pipeline = [
         "ip_data.geo.latitude": 1,
         "ip_data.geo.longitude": 1,
         "ip_data.geo.asn": 1,
+        "ip_data.remarks.average_rtt": 1,
     }},
 ]
