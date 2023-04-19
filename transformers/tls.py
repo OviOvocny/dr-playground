@@ -1,6 +1,7 @@
 import datetime
 import re
 from pandas import DataFrame, Series, concat
+from pandas.errors import OutOfBoundsDatetime
 
 def run_analyzer(row: Series) -> Series:
     """
@@ -144,9 +145,12 @@ def analyze_tls(item: dict, collection_data: datetime.datetime) -> dict:
             broken_chain = 1
             break
         
-        
-        time_to_expire = certificate['validity_end'] - collection_data
-        time_to_expire = round(time_to_expire.total_seconds() / (60*60*24))
+        try:
+            time_to_expire = certificate['validity_end'] - collection_data
+            time_to_expire = round(time_to_expire.total_seconds() / (60*60*24))
+        except OutOfBoundsDatetime:
+            print(certificate['validity_end'], collection_data)
+            time_to_expire = -1
         
         if time_to_expire < 0:
             expired_chain = 1
