@@ -1,8 +1,8 @@
-notebook
-scikit-learn
-xgboost
-matplotlib
-seaborn
-pandas
-pymongoarrow
-python-dotenv
+notebook>=6.5.4
+scikit-learn>=1.2.2
+xgboost>=1.7.5
+matplotlib>=3.7.1
+seaborn>=0.12.2
+pandas>=2.0.0
+pymongoarrow>=0.7.0
+python-dotenv>=1.0.0
