@@ -6,3 +6,4 @@ seaborn>=0.12.2
 pandas>=2.0.0
 pymongoarrow>=0.7.0
 python-dotenv>=1.0.0
+click>=8.1.3

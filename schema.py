@@ -29,19 +29,6 @@ from pyarrow import list_, string, int64, float64, bool_, struct, timestamp
 # https://mongo-arrow.readthedocs.io/en/latest/supported_types.html
 
 
-dns_data = { dns_type: list_(string()) for dns_type in ['A', 'AAAA', 'CNAME', 'MX', 'NS', 'SOA', 'TXT'] }
-
-rdap_domain_data = {
-    "registration_date": timestamp('ms'),
-    "expiration_date": timestamp('ms'),
-    "last_changed_date": timestamp('ms'),
-    "entities": {
-        "registrar": list_(struct([
-            ("handle", string()),
-        ]))
-    },
-}
-
 tls_data = {
     "protocol": string(),
     "cipher": string(),
@@ -80,13 +67,11 @@ schema = Schema({
     "label": string(),
     "category": string(),
     #
-    "remarks": {
-        "tls_evaluated_on": timestamp('ms'),
-    },
-    "dns": dns_data,
-    "rdap": rdap_domain_data,
+    "tls_evaluated_on": timestamp('ms'),
+    **{f"dns_{dns_type}": list_(string()) for dns_type in ['A', 'AAAA', 'CNAME', 'MX', 'NS', 'SOA', 'TXT']},
+    "domain_registration_date": timestamp('ms'),
+    "domain_expiration_date": timestamp('ms'),
+    "domain_last_changed_date": timestamp('ms'),
     "tls": tls_data,
     "ip_data": list_(struct(ip_data)),
 })
-
-match = { "evaluated_on": {"$ne": None} }

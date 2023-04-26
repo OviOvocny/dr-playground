@@ -8,6 +8,7 @@
 # fields you want to use to this pipeline.
 # At the most basic level, use a 1 to select the field. 
 # Fields not specified in the projection will be excluded.
+# Use a custom name and add an existing (usually nested) field to it using $.
 # More complex projections can be done, but try to avoid them.
 # We can do complex stuff in the transformers.
 #
@@ -18,28 +19,27 @@
 # After adding a new field, you'll need to add it to the schema
 # in schema.py - see that file for more information.
 
-pipeline = [
-    {"$match": { "evaluated_on": {"$ne": None} }},
-    {"$project": {
-        "_id": 0,
-        "domain_name": 1,
-        "label": 1,
-        "category": 1,
-        #
-        "dns": 1,
-        #
-        "tls": 1,
-        "remarks.tls_evaluated_on": 1,
-        #
-        "rdap.registration_date": 1,
-        "rdap.expiration_date": 1,
-        "rdap.last_changed_date": 1,
-        #"rdap.entities.registrar.handle": 1,
-        #
-        "ip_data.geo.country": 1,
-        "ip_data.geo.latitude": 1,
-        "ip_data.geo.longitude": 1,
-        "ip_data.geo.asn": 1,
-        "ip_data.remarks.average_rtt": 1,
-    }},
-]
+query = { "evaluated_on": {"$ne": None} }
+
+projection = {
+    "_id": 0,
+    "domain_name": 1,
+    "label": 1,
+    "category": 1,
+    #
+    **{f"dns_{dns_type}": f"$dns.{dns_type}" for dns_type in ['A', 'AAAA', 'CNAME', 'MX', 'NS', 'SOA', 'TXT']},
+    #
+    "tls": 1,
+    "tls_evaluated_on": "$remarks.tls_evaluated_on",
+    #
+    "domain_registration_date": "$rdap.registration_date",
+    "domain_expiration_date": "$rdap.expiration_date",
+    "domain_last_changed_date": "$rdap.last_changed_date",
+    #"rdap.entities.registrar.handle": 1,
+    #
+    "ip_data.geo.country": 1,
+    "ip_data.geo.latitude": 1,
+    "ip_data.geo.longitude": 1,
+    "ip_data.geo.asn": 1,
+    "ip_data.remarks.average_rtt": 1,
+}

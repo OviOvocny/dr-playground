@@ -30,32 +30,6 @@ def flatten(df: DataFrame) -> DataFrame:
     Input: DF with nested fields
     Output: DF with new columns for the fields
     """
-    #
-    # flatten remarks
-    remarks_mapping = {
-        "tls_evaluated_on": "tls_evaluated_on",
-    }
-    remarks_columns = df.apply(lambda row: map_dict_to_series(row['remarks'], remarks_mapping), axis=1)
-    df.drop(columns=['remarks'], inplace=True)
-    df = concat([df, remarks_columns], axis=1)
-    #
-    # flatten dns
-    dns_mapping = { type: type for type in ['A', 'AAAA', 'CNAME', 'MX', 'NS', 'SOA', 'TXT'] }
-    dns_columns = df.apply(lambda row: map_dict_to_series(row['dns'], dns_mapping, prefix='dns_'), axis=1)
-    df.drop(columns=['dns'], inplace=True)
-    df = concat([df, dns_columns], axis=1)
-    #
-    # flatten rdap
-    rdap_mapping = {
-        "registration_date": "registration_date",
-        "expiration_date": "expiration_date",
-        "last_changed_date": "last_changed_date",
-        #"registrar_handle": "entities.registrar.0.handle"
-    }
-    rdap_columns = df.apply(lambda row: map_dict_to_series(row['rdap'], rdap_mapping, prefix='domain_'), axis=1)
-    df.drop(columns=['rdap'], inplace=True)
-    df = concat([df, rdap_columns], axis=1)
-    #
     # flatten ip_data
     ip_columns = df.apply(lambda row: map_ip_data(row['ip_data']), axis=1)
     df.drop(columns=['ip_data'], inplace=True)
