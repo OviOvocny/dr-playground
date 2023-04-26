@@ -5,6 +5,14 @@ from pandas import Series
 # If you feel like you've created a helper function for your transformer 
 # that you think could be useful for others, please extract it to here.
 
+def clean_list(input: list):
+    """
+    Takes a list and removes all None values. None input returns empty list.
+    """
+    if input is None:
+        return []
+    return [value for value in input if value is not None]
+
 def dict_path(input: dict, path: str):
     """
     Takes a dict and a path string. The path string is a dot-separated list of keys or list indices.
