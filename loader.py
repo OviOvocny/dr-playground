@@ -51,6 +51,9 @@ def get_df(collection_name: str, cache_mode: str):
     """Wrapper for pymongoarrow.find/aggregate_whatever_all because it's typed NoReturn for some godforsaken reason."""
     # determine whether to refresh from mongo
     # TODO: implement auto cache check
+    if cache_mode not in ['auto', 'force-refresh', 'force-local']:
+        print(f'Invalid cache_mode "{cache_mode}", defaulting to auto!', file=sys.stderr)
+        cache_mode = 'auto'
     will_refresh = False
     if cache_mode == 'auto':
         print('[NOTE] Auto cache check not yet implemented, defaulting to local data! Use "-c force-refresh" in CLI or pass "force-refresh" to cache_mode param to load from DB.', file=sys.stderr)
@@ -82,6 +85,9 @@ import transformers
 @click.option('-c', '--cache-mode', 
               type=click.Choice(['auto', 'force-refresh', 'force-local']), default='auto', 
               help='Whether to use cached data or not. Defaults to auto, checking for changes in database.')
+def run_cli(cache_mode = 'auto'):
+    run(cache_mode)
+
 def run(cache_mode = 'auto'):
     for label, collection_name in Config.COLLECTIONS.items():
         #==> run aggregation pipeline to get select fields from mongo
@@ -111,4 +117,4 @@ def run(cache_mode = 'auto'):
         save_df(df, label)
 
 if __name__ == '__main__':
-    run()
+    run_cli()
