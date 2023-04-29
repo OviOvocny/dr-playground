@@ -26,14 +26,14 @@ def tls(df: DataFrame) -> DataFrame:
 
 
 
-security_scores = {
+tls_version_ids = {
     "TLSv1.0": 0,
     "TLSv1.1": 1,
     "TLSv1.2": 2,
     "TLSv1.3": 3
 }
 
-cipher_scores = {
+tls_cipher_ids = {
     'ECDHE-RSA-AES128-GCM-SHA256': 0,
     'TLS_AES_128_GCM_SHA256': 1,
     'TLS_AES_256_GCM_SHA384': 2,
@@ -61,10 +61,10 @@ def analyze_tls(item: dict, collection_data: datetime.datetime) -> dict:
     # We dont hane tls data for this domain
     if item is None:
         features = { 
-        "tls_has_tls":None,                           # Has TLS
+        "tls_has_tls":False,                          # Has TLS
         "tls_chain_len":None,                         # Length of certificate chain
-        "tls_version_score":None,                     # Evaluated TLS version
-        "tls_cipher_score":None,                      # Evaluated cipher
+        "tls_version_id":None,                        # Evaluated TLS version
+        "tls_cipher_id":None,                         # Evaluated cipher
         "tls_root_cert_validity_len":None,            # Total validity time of root certificate
         "tls_root_cert_validity_remaining":None,      # Time to expire of root certificate from time of collection
         "tls_leaf_cert_validity_len":None,            # Total validity time of leaf certificate      
@@ -94,8 +94,8 @@ def analyze_tls(item: dict, collection_data: datetime.datetime) -> dict:
     SSL_SCORE = 0
         
     # FEATURES
-    tls_version_score = security_scores.get(item['protocol'] , 0)
-    cipher_score = cipher_scores.get(item['cipher'] , 0)
+    tls_version_id = tls_version_ids.get(item['protocol'] , 0)
+    tls_cipher_id = tls_cipher_ids.get(item['cipher'] , 0)
     
     # Certificate features #
     common_names = []
@@ -255,8 +255,8 @@ def analyze_tls(item: dict, collection_data: datetime.datetime) -> dict:
     features = { 
         "tls_has_tls": True,                                        # Has TLS
         "tls_chain_len": item['count'],                             # Length of certificate chain
-        "tls_version_score": tls_version_score,                     # Evaluated TLS version
-        "tls_cipher_score": cipher_score,                           # Evaluated cipher
+        "tls_version_id": tls_version_id,                           # Evaluated TLS version
+        "tls_cipher_id": tls_cipher_id,                             # Evaluated cipher
         "tls_root_cert_validity_len": root_crt_validity__len,       # Total validity time of root certificate
         "tls_root_cert_validity_remaining": root_crt_time_to_expire,# Time to expire of root certificate from time of collection
         "tls_leaf_cert_validity_len": leaf_crt_validity_len,        # Total validity time of leaf certificate      
