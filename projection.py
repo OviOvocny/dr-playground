@@ -37,6 +37,7 @@ projection = {
     "domain_last_changed_date": "$rdap.last_changed_date",
     #"rdap.entities.registrar.handle": 1,
     "rdap_dnssec": "$rdap.dnssec",
+    #"rdap_entities": "$rdap.entities",
     #
     "ip_data.geo.country": 1,
     "ip_data.geo.latitude": 1,
