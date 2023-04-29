@@ -237,7 +237,7 @@ def analyze_tls(item: dict, collection_data: datetime.datetime) -> dict:
                 
 
 
-
+    
 
     # computation of certificate chain fetures
     percentage_of_policies  = (any_policy_cnt / cert_counter)
@@ -281,6 +281,7 @@ def analyze_tls(item: dict, collection_data: datetime.datetime) -> dict:
         "tls_CA_certs_in_chain_ratio": CA_ratio,                    # Ration of CA certificates in chain
         "tls_unique_SLD_count": SLD_cnt,                            # Number of unique SLDs in SAN extension
         #NOTUSED# "tls_common_names": common_names,                 # List of common names in certificate chain (CATEGORICAL!)
+        "tls_common_name_count": len(common_names),                 # Number of common names in certificate chain
     }
     
     return {"success": True, "features": features}
