@@ -26,3 +26,9 @@ from .coords import coord_stddev as transform_coords_stddev
 from .count import dns_count as transform_dns_count
 # get mean of average RTT
 from .lists import rtt_mean as transform_rtt_mean
+
+# transform RDAP
+from .rdap import rdap as transform_rdap
+
+# transform DNS
+from .dns import dns as transform_dns

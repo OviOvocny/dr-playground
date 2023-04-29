@@ -15,7 +15,7 @@ def dns_count(df: DataFrame) -> DataFrame:
     Input: DF with dns_* columns
     Output: DF with dns_*_count columns added
     """
-    for column in df.columns:
-        if column.startswith('dns_'):
-            df[column + '_count'] = df[column].apply(lambda values: len(values) if values is not None else 0)
+
+    for column in [f'dns_{c}' for c in ['A', 'AAAA', 'CNAME', 'MX', 'NS', 'SOA', 'TXT']]:
+        df[column + '_count'] = df[column].apply(lambda values: len(values) if values is not None else 0)
     return df
