@@ -72,6 +72,7 @@ schema = Schema({
     "domain_registration_date": timestamp('ms'),
     "domain_expiration_date": timestamp('ms'),
     "domain_last_changed_date": timestamp('ms'),
+    "rdap_dnssec": bool_(),
     "tls": tls_data,
     "ip_data": list_(struct(ip_data)),
 })

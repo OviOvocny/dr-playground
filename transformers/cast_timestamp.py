@@ -11,11 +11,4 @@ def cast_timestamp(df: DataFrame):
             # replace minimum int with null
             df[col] = df[col].replace(np.iinfo(np.int64).min, np.nan)
 
-        """
-        if api.types.is_timedelta_64_ns_dtype(df[col]):
-            df[col] = df[col].dt.floor('s').astype(np.int64)
-            # replace minimum int with null
-            df[col] = df[col].replace(np.iinfo(np.int64).min, np.nan)
-        """
-    
     return df

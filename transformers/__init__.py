@@ -21,7 +21,7 @@ from .ip_entropy import ip_entropy as transform_ip_entropy
 # count number of unique countries
 from .count import countries_count as transform_countries_count
 # calculate standard deviation of latitudes and longitudes
-from .coords import coord_stddev as transform_coords_stddev
+from .geo import coord_stddev as transform_coords_stddev
 # count number of DNS records of each type
 from .count import dns_count as transform_dns_count
 # get mean of average RTT
