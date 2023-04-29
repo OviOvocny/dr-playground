@@ -1,6 +1,5 @@
 from pandas import DataFrame
 import numpy as np
-import category_encoders as ce
 
 continents = {
     'North America': ['Canada', 'United States', 'Mexico', 'Bermuda'],
