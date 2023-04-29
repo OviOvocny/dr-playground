@@ -16,19 +16,11 @@ from .flatten import flatten as transform_flatten_save
 from .tls import tls as transform_tls
 # calculate length of domain name
 from .lexical import lex as transform_lexical
-# calculate entropy from inner octets of IP addresses
-from .ip_entropy import ip_entropy as transform_ip_entropy
-# count number of unique countries
-from .count import countries_count as transform_countries_count
+# calculate IP-related features
+from .ip import ip as transform_ip
 # calculate standard deviation of latitudes and longitudes
-from .geo import coord_stddev as transform_coords_stddev
-# count number of DNS records of each type
-from .count import dns_count as transform_dns_count
-# get mean of average RTT
-from .lists import rtt_mean as transform_rtt_mean
-
+from .geo import geo as transform_geo
 # transform RDAP
 from .rdap import rdap as transform_rdap
-
 # transform DNS
 from .dns import dns as transform_dns

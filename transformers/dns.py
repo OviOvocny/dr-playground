@@ -4,6 +4,18 @@ import tldextract
 from pandas import DataFrame, Series, concat
 from pandas.errors import OutOfBoundsDatetime
 
+def add_dns_record_counts(df: DataFrame) -> DataFrame:
+    """
+    Calculate number of DNS records for each domain.
+    Input: DF with dns_* columns
+    Output: DF with dns_*_count columns added
+    """
+
+    for column in [f'dns_{c}' for c in ['A', 'AAAA', 'CNAME', 'MX', 'NS', 'SOA', 'TXT']]:
+        df[column + '_count'] = df[column].apply(lambda values: len(values) if values is not None else 0)
+    return df
+
+
 def dns(df: DataFrame) -> DataFrame:
     """
     Transform tls field into new columns.
@@ -11,8 +23,7 @@ def dns(df: DataFrame) -> DataFrame:
     Output: DF with new columns for the fields
     """
     
-    #dns_columns = df.apply(find_derived_dns_features, axis=1)
-    #df = concat([df, dns_columns], axis=1)
+    df = add_dns_record_counts(df)
     df = df.apply(find_derived_dns_features, axis=1)
     return df
 
@@ -34,7 +45,7 @@ def find_derived_dns_features(row: Series) -> Series:
     row["dns_soa_admin_email_subdomains"] = None
     row["dns_soa_admin_email_digit_count"] = None
 
-    row["domain_name_in_mx"] = 0
+    row["dns_domain_name_in_mx"] = 0
     row["dns_txt_google_verified"] = 0
     row["dns_txt_spf_exists"] = 0
 
@@ -58,7 +69,7 @@ def find_derived_dns_features(row: Series) -> Series:
     if row["dns_MX"] is not None:
         for mailserver in row['dns_MX']:
             if domain_name in mailserver:
-                row["domain_name_in_mx"] = 1
+                row["dns_domain_name_in_mx"] = 1
                 break
     
     # Google site verification in TXT

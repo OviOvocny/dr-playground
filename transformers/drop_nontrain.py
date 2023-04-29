@@ -10,6 +10,11 @@ nontraining_fields = [
     "latitudes",
     "longitudes",
     *[f"dns_{t}" for t in ["A", "AAAA", "CNAME", "MX", "NS", "SOA", "TXT"]],
+    "domain_registration_date",
+    "domain_last_changed_date",
+    "domain_expiration_date",
+    "average_rtt",
+    "rdap_dnssec"
 ]
 
 def drop_nontrain(df):
