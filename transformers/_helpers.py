@@ -5,6 +5,24 @@ from pandas import Series
 # If you feel like you've created a helper function for your transformer 
 # that you think could be useful for others, please extract it to here.
 
+def mean_of_existing_values(values):
+    """
+    Calculate mean of list of values, ignoring None values.
+    Input: list of floats or None values
+    Output: mean of values or -1
+    """
+    clean = clean_list(values)
+    return sum(clean) / len(clean) if len(clean) > 0 else -1
+
+def max_of_existing_values(values):
+    """
+    Calculate max of list of values, ignoring None values.
+    Input: list of floats or None values
+    Output: max of values or -1
+    """
+    clean = clean_list(values)
+    return max(clean) if len(clean) > 0 else -1
+
 def clean_list(input: list):
     """
     Takes a list and removes all None values. None input returns empty list.
