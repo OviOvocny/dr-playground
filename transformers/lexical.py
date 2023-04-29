@@ -296,6 +296,6 @@ def lex(df: DataFrame) -> DataFrame:
     df['lex_sub_hex_ratio'] = df['tmp_concat_subdomains'].apply(lambda x: (sum(1 for c in x if c in '0123456789ABCDEFabcdef') / len(x)) if len(x) > 0 else None)
 
     # Drop temporary columns
-    df.drop(['tmp_tld', 'tmp_sld', 'tmp_stld', 'tmp_concat_subdomains'], axis=1, inplace=False)
+    df = df.drop(['tmp_tld', 'tmp_sld', 'tmp_stld', 'tmp_concat_subdomains'], axis=1, inplace=False)
 
     return df

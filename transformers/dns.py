@@ -35,7 +35,8 @@ def find_derived_dns_features(row: Series) -> Series:
     row["dns_soa_admin_email_digit_count"] = None
 
     row["domain_name_in_mx"] = 0
-    row["dns_txt_google_vetified"] = 0
+    row["dns_txt_google_verified"] = 0
+    row["dns_txt_spf_exists"] = 0
 
     domain_name = row["domain_name"]
     
@@ -64,8 +65,9 @@ def find_derived_dns_features(row: Series) -> Series:
     if row["dns_TXT"] is not None:
         for rec in row['dns_TXT']:
             if "google-site-verification" in rec:
-                row["dns_txt_google_vetified"] = 1
-                break
+                row["dns_txt_google_verified"] = 1
+            if "spf" in rec:
+                row["dns_txt_spf_exists"] = 1
     
     return row
     
