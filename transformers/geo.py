@@ -10,6 +10,16 @@ continents = {
     'Oceania': ['Australia', 'Papua New Guinea', 'New Zealand', 'Fiji', 'Solomon Islands', 'Vanuatu', 'New Caledonia', 'French Polynesia', 'Samoa', 'Guam', 'Kiribati']
 }
 
+continent_ids = {
+    'Unknown': 0,
+    'North America': 1,
+    'South America': 2,
+    'Europe': 3,
+    'Africa': 4,
+    'Asia': 5,
+    'Oceania': 6
+}
+
 country_ids = {
     "Afghanistan": 1, "Albania": 2, "Algeria": 3, "Andorra": 4, "Angola": 5, "Antigua and Barbuda": 6, "Argentina": 7,
     "Armenia": 8, "Australia": 9, "Austria": 10, "Azerbaijan": 11, "Bahamas": 12, "Bahrain": 13, "Bangladesh": 14,
@@ -36,14 +46,26 @@ country_ids = {
     "Switzerland": 170, "Syria": 171, "Tajikistan": 172, "Tanzania": 173, "Thailand": 174, "Timor-Leste": 175, "Togo": 176, "Tonga": 177,
     "Trinidad and Tobago": 178, "Tunisia": 179, "Turkey": 180, "Turkmenistan": 181, "Tuvalu": 182, "Uganda": 183, "Ukraine": 184,
     "United Arab Emirates": 185, "United Kingdom": 186, "United States of America": 187, "Uruguay": 188, "Uzbekistan": 189, "Vanuatu": 190,
-    "Venezuela": 191, "Vietnam": 192, "Yemen": 193, "Zambia": 194, "Zimbabwe": 195
+    "Venezuela": 191, "Vietnam": 192, "Yemen": 193, "Zambia": 194, "Zimbabwe": 195,
+    "Unknown": 300
 }
 
-def get_continent(country_name):
+def get_continent_name(country_name):
     for continent, countries in continents.items():
         if country_name in countries:
             return continent
     return None
+
+def get_continent_id(country_name):
+    try:
+        continent_name = get_continent_name(country_name)
+    except:
+        continent_name = "Unknown"
+
+    if continent_name in continent_ids.keys():
+        return continent_ids[continent_name]
+    else:
+        return 0
 
 def hash_countries(countries):
     if countries == None:
@@ -74,7 +96,6 @@ def add_countries_count(df: DataFrame) -> DataFrame:
     df['geo_countries_count'] = df['countries'].apply(lambda countries: len(list(set(countries))) if countries is not None else 0)
     return df
 
-
 def get_stddev(values):
     if values is None:
         return 0.0
@@ -97,7 +118,7 @@ def geo(df: DataFrame) -> DataFrame:
     df = add_countries_count(df)
     #NOTUSED# df = add_coord_stddev(df)
 
-    df["geo_continent"] = df["countries"].apply(get_continent)
+    df["geo_continent_id"] = df["countries"].apply(get_continent_id)
     df["geo_countries_hash"] = df["countries"].apply(hash_countries)
 
     return df
