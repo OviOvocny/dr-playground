@@ -61,32 +61,32 @@ def analyze_tls(item: dict, collection_data: datetime.datetime) -> dict:
     # We dont hane tls data for this domain
     if item is None:
         features = { 
-        "tls_has_tls":False,                          # Has TLS
-        "tls_chain_len":None,                         # Length of certificate chain
-        "tls_version_id":None,                        # Evaluated TLS version
-        "tls_cipher_id":None,                         # Evaluated cipher
-        "tls_root_cert_validity_len":None,            # Total validity time of root certificate
-        "tls_root_cert_validity_remaining":None,      # Time to expire of root certificate from time of collection
-        "tls_leaf_cert_validity_len":None,            # Total validity time of leaf certificate      
-        "tls_leaf_cert_validity_remaining":None,      # Time to expire of leaf certificate from time of collection      
-        #NOTUSED# "tls_mean_certs_validity_len":None, # Mean validity time of all certificates in chain including root
-        "tls_broken_chain":None,                      # Chain was never valid, 
-        "tls_expired_chain":None,                     # Chain already expired at time of collection
-        "tls_total_extension_count":None,             # Total number of extensions in certificate
-        "tls_critical_extensions":None,               # Total number of critical extensions in certificate
-        "tls_have_policies":None,                     # Number of certificates enforcing specific encryption policy
-        "tls_percentage_of_policies":None,            # Percentage of certificates enforcing specific encryption policy
-        "tls_unknown_policy_crt_count":None,          # How many cerificates uses unknown (not X509v3, not version 1, not version 2) policy
-        "tls_anypolicy_crt_count":None,               # Number of certificates enforcing X509v3 policy
-        "tls_joint-iso-itu_policy_crt_count":None,    # Number of certificates enforcing version 2 policy
-        "tls_iso_policy_crt_count":None,              # Number of certificates enforcing version 1 policy
-        "tls_subject_crt_count":None,                 # How many subjects can be found in SAN extension ( can be linked to phishing)       
-        "tls_server_auth_certs":None,                 # How many certificates are used for server authentication (can be simultanously used for client authentication)      
-        "tls_client_auth_certs":None,                 # How many certificates are used for client authentication
-        #NOTUSED# "CA_certs_in_chain_count":None,     # Count of certificates that are also CA (can sign other certificates)
-        "tls_CA_certs_in_chain_ratio":None,           # Ration of CA certificates in chain
-        "tls_unique_SLDs": None,                      # Number of unique SLDs in SAN extension
-        "tls_common_names": None,                     # List of common names in certificate chain
+            "tls_has_tls": False,                           # Has TLS
+            "tls_chain_len": None,                          # Length of certificate chain
+            "tls_version_id": None,                         # Evaluated TLS version
+            "tls_cipher_id": None,                          # Evaluated cipher
+            "tls_root_cert_validity_len": None,             # Total validity time of root certificate
+            "tls_root_cert_validity_remaining": None,       # Time to expire of root certificate from time of collection
+            "tls_leaf_cert_validity_len": None,             # Total validity time of leaf certificate      
+            "tls_leaf_cert_validity_remaining": None,       # Time to expire of leaf certificate from time of collection      
+            #NOTUSED# "tls_mean_certs_validity_len": None,  # Mean validity time of all certificates in chain including root
+            "tls_broken_chain": None,                       # Chain was never valid, 
+            "tls_expired_chain": None,                      # Chain already expired at time of collection
+            "tls_total_extension_count": None,              # Total number of extensions in certificate
+            "tls_critical_extensions": None,                # Total number of critical extensions in certificate
+            "tls_with_policies_crt_count": None,            # Number of certificates enforcing specific encryption policy
+            "tls_percentage_crt_with_policies": None,       # Percentage of certificates enforcing specific encryption policy
+            "tls_iso_v1_policy_crt_count": None,            # Number of certificates enforcing version 1 policy
+            "tls_iso_v2_policy_crt_count": None,            # Number of certificates enforcing version 2 policy
+            "tls_unknown_policy_crt_count": None,           # How many cerificates uses unknown (not X509v3, not version 1, not version 2) policy
+            "tls_x509-policy_crt_count": None,              # Number of certificates enforcing X509v3 policy
+            "tls_subject_count": None,                      # How many subjects can be found in SAN extension (can be linked to phishing)       
+            "tls_server_auth_crt_count": None,              # How many certificates are used for server authentication (can be simultanously used for client authentication)      
+            "tls_client_auth_crt_count": None,              # How many certificates are used for client authentication
+            #NOTUSED# "CA_certs_in_chain_count": None,      # Count of certificates that are also CA (can sign other certificates)
+            "tls_CA_certs_in_chain_ratio": None,            # Ration of CA certificates in chain
+            "tls_unique_SLD_count": None,                   # Number of unique SLDs in SAN extension
+            #NOTUSED# "tls_common_names": None,             # List of common names in certificate chain (CATEGORICAL!)
     }
     
         return {"success": False, "features": features}
@@ -119,11 +119,11 @@ def analyze_tls(item: dict, collection_data: datetime.datetime) -> dict:
     ### EXTENSION FEATURES ###
     total_extension_count = -1
     critical_extensions = -1
-    have_policies = 0
+    any_policy_cnt = 0
     percentage_of_policies = 0
     server_auth = 0
     client_auth = 0
-    unknown_usage = 0
+    unknown_policy_cnt = 0
     X_509_used_cnt = 0
     version_2_used_cnt = 0
     version_1_used_cnt = 0
@@ -210,7 +210,7 @@ def analyze_tls(item: dict, collection_data: datetime.datetime) -> dict:
                         client_auth += 1    
                         
             if extension["name"] == "certificatePolicies":
-                have_policies += 1
+                any_policy_cnt += 1
                 data = extension["value"].split(",")
                 
                 # for each value remove everythong after newline 
@@ -228,6 +228,8 @@ def analyze_tls(item: dict, collection_data: datetime.datetime) -> dict:
                         version_1_used_cnt += 1
                     elif re.compile(r"Policy: 2\.").match(policy):
                         version_2_used_cnt += 1
+                    else:
+                        unknown_policy_cnt += 1
             
             if extension["name"] == "basicConstraints":
                 if extension["value"] == "CA:TRUE":
@@ -238,7 +240,7 @@ def analyze_tls(item: dict, collection_data: datetime.datetime) -> dict:
 
 
     # computation of certificate chain fetures
-    percentage_of_policies  = (have_policies / cert_counter)
+    percentage_of_policies  = (any_policy_cnt / cert_counter)
     CA_ratio = (CA_count / cert_counter)
     
     
@@ -266,19 +268,19 @@ def analyze_tls(item: dict, collection_data: datetime.datetime) -> dict:
         "tls_expired_chain": expired_chain,                         # Chain already expired at time of collection
         "tls_total_extension_count": total_extension_count,         # Total number of extensions in certificate
         "tls_critical_extensions": critical_extensions,             # Total number of critical extensions in certificate
-        "tls_have_policies": have_policies,                         # Number of certificates enforcing specific encryption policy
-        "tls_percentage_of_policies": percentage_of_policies,       # Percentage of certificates enforcing specific encryption policy
-        "tls_unknown_policy_crt_count": unknown_usage,              # How many cerificates uses unknown (not X509v3, not version 1, not version 2) policy
-        "tls_anypolicy_crt_count": X_509_used_cnt,                  # Number of certificates enforcing X509v3 policy
-        "tls_joint-iso-itu_policy_crt_count": version_2_used_cnt,   # Number of certificates enforcing version 2 policy
-        "tls_iso_policy_crt_count": version_1_used_cnt,             # Number of certificates enforcing version 1 policy
-        "tls_subject_crt_count": subject_count,                     # How many subjects can be found in SAN extension ( can be linked to phishing)       
-        "tls_server_auth_certs": server_auth,                       # How many certificates are used for server authentication (can be simultanously used for client authentication)      
-        "tls_client_auth_certs": client_auth,                       # How many certificates are used for client authentication
+        "tls_with_policies_crt_count": any_policy_cnt,              # Number of certificates enforcing specific encryption policy
+        "tls_percentage_crt_with_policies": percentage_of_policies, # Percentage of certificates enforcing specific encryption policy
+        "tls_iso_v1_policy_crt_count": version_1_used_cnt,          # Number of certificates enforcing version 1 policy
+        "tls_iso_v2_policy_crt_count": version_2_used_cnt,          # Number of certificates enforcing version 2 policy
+        "tls_unknown_policy_crt_count": unknown_policy_cnt,         # How many cerificates uses unknown (not X509v3, not version 1, not version 2) policy
+        "tls_x509-policy_crt_count": X_509_used_cnt,                # Number of certificates enforcing X509v3 policy
+        "tls_subject_count": subject_count,                         # How many subjects can be found in SAN extension (can be linked to phishing)       
+        "tls_server_auth_crt_count": server_auth,                   # How many certificates are used for server authentication (can be simultanously used for client authentication)      
+        "tls_client_auth_crt_count": client_auth,                   # How many certificates are used for client authentication
         #NOTUSED# "CA_certs_in_chain_count": CA_count,              # Count of certificates that are also CA (can sign other certificates)
         "tls_CA_certs_in_chain_ratio": CA_ratio,                    # Ration of CA certificates in chain
-        "tls_unique_SLDs": SLD_cnt,                                 # Number of unique SLDs in SAN extension
-        "tls_common_names": common_names,                           # List of common names in certificate chain
+        "tls_unique_SLD_count": SLD_cnt,                            # Number of unique SLDs in SAN extension
+        #NOTUSED# "tls_common_names": common_names,                 # List of common names in certificate chain (CATEGORICAL!)
     }
     
     return {"success": True, "features": features}
