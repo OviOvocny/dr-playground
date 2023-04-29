@@ -1,3 +1,4 @@
+from typing import Optional
 from pandas import DataFrame
 
 import numpy as np
@@ -65,7 +66,7 @@ def get_hex_ratio(domain: str) -> float:
     return hex_count / len(domain)
 
 
-def get_normalized_entropy(domain: str) -> float:
+def get_normalized_entropy(domain: str) -> Optional[float]:
     """Function returns the normalized entropy of the
     string. The function first computes the frequency
     of each character in the string using
@@ -174,6 +175,17 @@ def remove_tld(domain: str) -> str:
     result = subdomain + "." + sld if subdomain else sld
     return result
 
+def vowel_count(domain: str) -> int:
+    """Function returns the number of vowels in
+    the domain name
+    Args:
+        domain (str): The domain name
+    Returns:
+        int: Number of vowels
+    """
+    vowels = set("aeiouy")
+    return sum(1 for char in domain.lower() if char in vowels)
+
 def extract_subdomains(domain:str) -> list:
     """
     Function returns the list of the subdomains and 
@@ -193,74 +205,43 @@ def extract_subdomains(domain:str) -> list:
     domain_list = subdomains + [sld]
     return domain_list
 
-def find_longest_word(char_sequence:str) -> list:
-    """
-    Function find the longest valid English word
-    in a given sequence of characters.
+def total_underscores_and_hyphens(domain: str) -> int:
+    """Function returns the total number of underscores
+    and hyphens in the domain name.
 
     Args:
-    - char_sequence (str): Input sequence of characters
+        domain (str): The domain name
 
     Returns:
-    - str: Longest valid English word found in the input sequence
+        int: Number of underscores and hyphens
     """
-    matched_words = []
-    word = ""
-    longest_word = None
-    # If the empty string is passed
-    if not char_sequence:
-        return 
-    
-    # Iterate thorugh string 
-    for char in char_sequence:
-        word += char
-        if word in english_words:
-            matched_words.append(word)
+    return sum(domain.count(char) for char in ['_', '-'])
 
-    if matched_words:
-        longest_word = max(matched_words, key=len)
-        if longest_word:
-            if (len(char_sequence) - len(longest_word)) > 0:
-                find_longest_word(char_sequence.replace(longest_word, ""))
-    else:
-        find_longest_word(char_sequence[1:])
-    print(longest_word)
-    return longest_word
-    
-def find_longest_matched_words(char_sequence: str) -> list:
-    """
-    Function finds the longest valid English word(s)
-    in a given sequence of characters.
+
+def consecutive_chars(domain: str) -> int:
+    """Function returns the number of consecutive
+    characters.
 
     Args:
-    - char_sequence (str): Input sequence of characters
-    - english_words (set): Set of valid English words
+        domain (str): The domain name
 
     Returns:
-    - list: List of longest matched English words found in the input sequence
+        int: Number of consecutive characters
     """
-    matched_words = []
-    word = ""
-    longest_matched_words = []
+    if len(domain) == 0:
+        return 0
     
-    if not char_sequence:
-        return longest_matched_words
-    
-    for char in char_sequence:
-        word += char
-        if word in english_words and len(word) > 1:
-            matched_words.append(word)
-
-    if matched_words:
-        longest_word_length = max(len(word) for word in matched_words)
-        longest_matched_words = [word for word in matched_words if len(word) == longest_word_length]
-        if len(char_sequence) - longest_word_length > 0:
-            return longest_matched_words + find_longest_matched_words(char_sequence[longest_word_length:])
+    max_count = 1
+    count = 1
+    prev_char = domain[0]
+    for char in domain[1:]:
+        if char == prev_char:
+            count += 1
+            max_count = max(max_count, count)
         else:
-            return longest_matched_words
-    else:
-        return find_longest_matched_words(char_sequence[1:])
-    
+            count = 1
+        prev_char = char
+    return max_count
 
 def lex(df: DataFrame) -> DataFrame:
     """
@@ -269,12 +250,14 @@ def lex(df: DataFrame) -> DataFrame:
     Output: DF with lexical features derived from domain_name added
     """
     df['lex_name_len'] = df['domain_name'].apply(len)
-    #NOTUSED# df['lex_subdomain_count'] = df['domain_name'].apply(lambda x: x.count('.'))   # (with www and TLD) :-> lex_sub_count used instead
+    #NOTUSED# df['lex_dots_count'] = df['domain_name'].apply(lambda x: x.count('.'))   # (with www and TLD) :-> lex_sub_count used instead
     #NOTUSED# df['lex_subdomain_len'] = df['domain_name'].apply(lambda x: sum([len(y) for y in x.split('.')]))  # without dots
     df['lex_digit_count'] = df['domain_name'].apply(lambda x: sum([1 for y in x if y.isdigit()]))
     df['lex_has_digit'] = df['domain_name'].apply(lambda x: 1 if sum([1 for y in x if y.isdigit()]) > 0 else 0)
     df['lex_phishing_keyword_count'] = df['domain_name'].apply(lambda x: sum(1 for w in phishing_keywords if w in x))
-
+    df['vowel_count'] = df['domain_name'].apply(lambda x: vowel_count(x))
+    df['lex_underscore_hyphen_count'] = df['domain_name'].apply(lambda x: total_underscores_and_hyphens(x))
+    df['lex_consecutive_chars'] = df['domain_name'].apply(lambda x: consecutive_chars(x))
     # Save temporary domain name parts for lex feature calculation
     df['tmp_tld'] = df['domain_name'].apply(lambda x: tldextract.extract(x).suffix)
     df['tmp_sld'] = df['domain_name'].apply(lambda x: tldextract.extract(x).domain)
