@@ -84,7 +84,9 @@ def analyze_tls(item: dict, collection_data: datetime.datetime) -> dict:
         "tls_server_auth_certs":None,                 # How many certificates are used for server authentication (can be simultanously used for client authentication)      
         "tls_client_auth_certs":None,                 # How many certificates are used for client authentication
         #NOTUSED# "CA_certs_in_chain_count":None,     # Count of certificates that are also CA (can sign other certificates)
-        "tls_CA_certs_in_chain_ratio":None            # Ration of CA certificates in chain
+        "tls_CA_certs_in_chain_ratio":None,           # Ration of CA certificates in chain
+        "tls_unique_SLDs": None,                      # Number of unique SLDs in SAN extension
+        "tls_common_names": None,                     # List of common names in certificate chain
     }
     
         return {"success": False, "features": features}
@@ -96,7 +98,7 @@ def analyze_tls(item: dict, collection_data: datetime.datetime) -> dict:
     cipher_score = cipher_scores.get(item['cipher'] , 0)
     
     # Certificate features #
-    
+    common_names = []
     
     ### ROOT CERTIFICATE ###
     root_crt_validity__len = -1
@@ -130,6 +132,9 @@ def analyze_tls(item: dict, collection_data: datetime.datetime) -> dict:
     
     ### NUMBER OF SUBJECTS if SAN ###
     subject_count = 0
+
+    ### NUMBER OF SLDs
+    SLD_cnt = 0
 
     #### Procesing of certificates and root especialy ####
     if len(item['certificates']) == 0:
@@ -165,7 +170,8 @@ def analyze_tls(item: dict, collection_data: datetime.datetime) -> dict:
             root_crt_time_to_expire = time_to_expire
             root_crt_validity__len = validity_len
         
-            
+        if certificate['common_name']:
+            common_names.append(certificate['common_name'])
         
             # if the certificate is not valid now it is suspicious
         mean_len += validity_len  
@@ -174,7 +180,7 @@ def analyze_tls(item: dict, collection_data: datetime.datetime) -> dict:
         
         
         #### EXTENSIONS ####
-        total_extension_count = certificate['extension_count']
+        total_extension_count += len(certificate['extensions'])
         for extension in certificate['extensions']:
             if extension['critical']:
                 critical_extensions += 1
@@ -182,7 +188,15 @@ def analyze_tls(item: dict, collection_data: datetime.datetime) -> dict:
                 
             if extension['name'] == "subjectAltName":
                 subject_count = len(extension['value'].split(","))
-                
+
+                # count SLDs
+                unique_SLDs = set()
+                for name in extension['value'].split(","):
+                    if "DNS:" in name:
+                        sld = name.split("DNS:")[1].split(".")
+                        if len(sld) >= 2:
+                            unique_SLDs.add(sld[-2])
+                SLD_cnt = len(unique_SLDs)
             
                             
             if extension["name"] == "extendedKeyUsage":
@@ -262,7 +276,9 @@ def analyze_tls(item: dict, collection_data: datetime.datetime) -> dict:
         "tls_server_auth_certs": server_auth,                       # How many certificates are used for server authentication (can be simultanously used for client authentication)      
         "tls_client_auth_certs": client_auth,                       # How many certificates are used for client authentication
         #NOTUSED# "CA_certs_in_chain_count": CA_count,              # Count of certificates that are also CA (can sign other certificates)
-        "tls_CA_certs_in_chain_ratio": CA_ratio                     # Ration of CA certificates in chain
+        "tls_CA_certs_in_chain_ratio": CA_ratio,                    # Ration of CA certificates in chain
+        "tls_unique_SLDs": SLD_cnt,                                 # Number of unique SLDs in SAN extension
+        "tls_common_names": common_names,                           # List of common names in certificate chain
     }
     
     return {"success": True, "features": features}
