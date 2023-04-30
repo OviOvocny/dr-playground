@@ -5,7 +5,7 @@ nontraining_fields = [
     "domain_name",
     # drop remark fields - not intended for training, skews results
     "tls_evaluated_on",
-    #"tls",
+    "tls",
     "countries",
     "latitudes",
     "longitudes",
@@ -14,7 +14,8 @@ nontraining_fields = [
     "domain_last_changed_date",
     "domain_expiration_date",
     "average_rtt",
-    "rdap_dnssec"
+    "rdap_dnssec",
+    #"rdap_entities"
 ]
 
 def drop_nontrain(df):

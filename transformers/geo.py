@@ -66,6 +66,31 @@ def get_continent_id(country_name):
         return continent_ids[continent_name]
     else:
         return 0
+    
+
+def hash_continents(countries):
+    if countries == None:
+        return 0
+    elif len(countries) == 0:
+        return 0
+
+    hash = 0
+    continent_ids_count = len(continent_ids)
+
+    for country_name in countries:
+        continent_id = 0
+        continent_ids_count = len(continent_ids)
+        try:
+            continent_id = get_continent_id(country_name)
+        except:
+            continent_id = 0
+        hash += continent_id
+
+        if continent_id > continent_ids_count:
+            hash *= 2
+
+    return hash % 2147483647
+
 
 def hash_countries(countries):
     if countries == None:
@@ -118,7 +143,7 @@ def geo(df: DataFrame) -> DataFrame:
     df = add_countries_count(df)
     #NOTUSED# df = add_coord_stddev(df)
 
-    df["geo_continent_id"] = df["countries"].apply(get_continent_id)
+    df["geo_continent_hash"] = df["countries"].apply(hash_continents)
     df["geo_countries_hash"] = df["countries"].apply(hash_countries)
 
     return df
