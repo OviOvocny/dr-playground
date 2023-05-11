@@ -7,3 +7,5 @@ cache/**/*.parquet
 
 __pycache__/
 *.py[cod]
+
+dp-things/*
