@@ -5,7 +5,6 @@ nontraining_fields = [
     "domain_name",
     # drop remark fields - not intended for training, skews results
     "tls_evaluated_on",
-    "tls",
     "countries",
     "latitudes",
     "longitudes",
