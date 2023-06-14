@@ -5,6 +5,9 @@ import math
 from pandas import DataFrame, Series, concat
 from pandas.errors import OutOfBoundsDatetime
 from typing import Optional
+import json
+from nltk import ngrams, FreqDist
+import pandas as pd
 
 def add_dns_record_counts(df: DataFrame) -> DataFrame:
     """
@@ -17,18 +20,29 @@ def add_dns_record_counts(df: DataFrame) -> DataFrame:
         df[column + '_count'] = df[column].apply(lambda values: len(values) if values is not None else 0)
     return df
 
+# Calculate ngram matches, find if bigram or trigram of this domain name is present in the ngram list
+def find_ngram_matches(text: str, ngrams: dict) -> int:
+    """
+    Find the number of ngram matches in the text.
+    Input: text string, ngrams dictionary
+    Output: number of matches
+    """
+    matches = 0
+    for ngram in ngrams:
+        if ngram in text:
+            print(ngram)
+            matches += 1
+    return matches
 
-def dns(df: DataFrame) -> DataFrame:
+def dns(df: DataFrame, ngram_freq: dict) -> DataFrame:
     """
-    Transform tls field into new columns.
-    Input: DF with tls field
-    Output: DF with new columns for the fields
+    Transform the tls field into new columns and add ngram matches.
+    Input: DataFrame with tls field, ngram frequency dictionary
+    Output: DataFrame with new columns for the fields
     """
-    
     df = add_dns_record_counts(df)
-    df = df.apply(find_derived_dns_features, axis=1)
+    df = df.apply(find_derived_dns_features, args=(ngram_freq,), axis=1)
     return df
-
 
 def get_normalized_entropy(text: str) -> Optional[float]:
     """Function returns the normalized entropy of the
@@ -58,24 +72,22 @@ def get_normalized_entropy(text: str) -> Optional[float]:
             freqs[char] += 1
         else:
             freqs[char] = 1
-    
+
     entropy = 0.0
     for f in freqs.values():
         p = float(f) / text_len
         entropy -= p * math.log(p, 2)
     return entropy / text_len
 
-
-
 """   
 @param item: one tls field from database
 @param collection_date: date when the collection was made
 @return: return {"success": True/False, "features": dict/None}
 """  
-def find_derived_dns_features(row: Series) -> Series:
+def find_derived_dns_features(row: Series, ngram_freq: dict) -> Series:
     
     #['A', 'AAAA', 'CNAME', 'MX', 'NS', 'SOA', 'TXT']
-
+    
     # SOA-derived features
     row["dns_soa_primary_ns_len"] = None
     row["dns_soa_primary_ns_subdomain_count"] = None
@@ -95,14 +107,18 @@ def find_derived_dns_features(row: Series) -> Series:
     row["dns_mx_mean_len"] = None
     row["dns_mx_mean_entropy"] = None
     row["dns_domain_name_in_mx"] = 0
-    
+
     # TXT-derived features
     row["dns_txt_google_verified"] = 0
     row["dns_txt_spf_exists"] = 0
     row["dns_txt_mean_entropy"] = None
 
+    # Ngram features
+    row["dns_bigram_matches"] = 0
+    row["dns_trigram_matches"] = 0
+
     domain_name = row["domain_name"]
-    
+
     # SOA-related features
     if row["dns_SOA"] is not None and len(row["dns_SOA"]) > 0:
         parts = row["dns_SOA"][0].split()
@@ -143,7 +159,7 @@ def find_derived_dns_features(row: Series) -> Series:
                 row["dns_soa_neg_resp_caching_ttl"] = int(parts[6])
             except:
                 pass
-       
+
     # MX-related features
     mx_len_sum = 0
     mx_entropy_sum = 0
@@ -158,7 +174,7 @@ def find_derived_dns_features(row: Series) -> Series:
             row["dns_mx_mean_len"] = mx_len_sum / len(row["dns_MX"])
         if mx_entropy_sum > 0:
             row["dns_mx_mean_entropy"] = mx_entropy_sum / len(row["dns_MX"])
-    
+
     # Google site verification in TXT
     txt_entropy_sum = 0
     if row["dns_TXT"] is not None and len(row["dns_TXT"]) > 0:
@@ -171,5 +187,10 @@ def find_derived_dns_features(row: Series) -> Series:
         if txt_entropy_sum > 0:
             row["dns_txt_mean_entropy"] = txt_entropy_sum / len(row["dns_TXT"])
 
+    # Calculate ngram matches, find if bigram or trigram of this domain name is present in the ngram list
+    if domain_name is not None:
+        row["dns_bigram_matches"] += find_ngram_matches(domain_name, ngram_freq["bigram_freq"])
+        row["dns_trigram_matches"] += find_ngram_matches(domain_name, ngram_freq["trigram_freq"])
+
     return row
-    
+
