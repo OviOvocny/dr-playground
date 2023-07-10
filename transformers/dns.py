@@ -30,16 +30,18 @@ def find_ngram_matches(text: str, ngrams: dict) -> int:
     matches = 0
     for ngram in ngrams:
         if ngram in text:
-            print(ngram)
             matches += 1
     return matches
 
-def dns(df: DataFrame, ngram_freq: dict) -> DataFrame:
+def dns(df: DataFrame) -> DataFrame:
     """
     Transform the tls field into new columns and add ngram matches.
     Input: DataFrame with tls field, ngram frequency dictionary
     Output: DataFrame with new columns for the fields
     """
+    #get ngram frequency dictionary from json file ngam_freq.json
+    with open('ngram_freq.json') as f:
+        ngram_freq = json.load(f)
     df = add_dns_record_counts(df)
     df = df.apply(find_derived_dns_features, args=(ngram_freq,), axis=1)
     return df
