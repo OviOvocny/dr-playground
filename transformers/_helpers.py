@@ -1,4 +1,8 @@
+import math
+from typing import Optional
+
 from pandas import Series
+
 
 # Here lies a bunch of helper functions that are used in the transformers.
 # They are not meant to be used directly, but are imported by the transformers.
@@ -14,6 +18,7 @@ def mean_of_existing_values(values):
     clean = clean_list(values)
     return sum(clean) / len(clean) if len(clean) > 0 else -1
 
+
 def max_of_existing_values(values):
     """
     Calculate max of list of values, ignoring None values.
@@ -23,6 +28,7 @@ def max_of_existing_values(values):
     clean = clean_list(values)
     return max(clean) if len(clean) > 0 else -1
 
+
 def clean_list(input: list):
     """
     Takes a list and removes all None values. None input returns empty list.
@@ -30,6 +36,7 @@ def clean_list(input: list):
     if input is None:
         return []
     return [value for value in input if value is not None]
+
 
 def dict_path(input: dict, path: str):
     """
@@ -47,11 +54,48 @@ def dict_path(input: dict, path: str):
             return None
     return input
 
-def map_dict_to_series(input: dict, mapping: dict, prefix: str = '', dtype = None) -> Series:
+
+def map_dict_to_series(input: dict, mapping: dict, prefix: str = '', dtype=None) -> Series:
     """
     Takes an input dict and a mapping dict. The mapping maps columns names to paths in the input dict {"column": "path.to.0.key"}.
     The new column names are prefixed with the prefix argument. The values are stored in pandas Series.
     """
     if dtype:
-        return Series({ prefix + new_name: dict_path(input, path) for new_name, path in mapping.items() }, dtype=dtype)
-    return Series({ prefix + new_name: dict_path(input, path) for new_name, path in mapping.items() })
+        return Series({prefix + new_name: dict_path(input, path) for new_name, path in mapping.items()}, dtype=dtype)
+    return Series({prefix + new_name: dict_path(input, path) for new_name, path in mapping.items()})
+
+
+def get_normalized_entropy(text: str) -> Optional[float]:
+    """Function returns the normalized entropy of the
+    string. The function first computes the frequency
+    of each character in the string using
+    the collections.Counter function.
+    It then uses the formula for entropy to compute
+    the entropy of the string, and normalizes it by
+    dividing it by the maximum possible entropy
+    (which is the logarithm of the minimum of the length
+    of the string and the number of distinct characters
+    in the string).
+
+    Args:
+        text (str): the string
+
+    Returns:
+        float: normalized entropy
+    """
+    text_len = len(text)
+    if text_len == 0:
+        return None
+
+    freqs = {}
+    for char in text:
+        if char in freqs:
+            freqs[char] += 1
+        else:
+            freqs[char] = 1
+
+    entropy = 0.0
+    for f in freqs.values():
+        p = float(f) / text_len
+        entropy -= p * math.log(p, 2)
+    return entropy / text_len

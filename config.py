@@ -8,6 +8,6 @@ class Config:
   MONGO_DB = 'drdb'
   # Collections to process by loader - {label: collection_name}
   COLLECTIONS = {
-      'phishing': 'misp',
       'benign': 'benign',
+      'malign': 'malign',
   }

@@ -1,7 +1,7 @@
 # This is a mongo aggregation pipeline that selects the 
 # fields we want to keep for transformation.
 # We use two stages:
-# 1. $match to filter out documents of domains that haven't been resoloved yet
+# 1. $match to filter out documents of domains that haven't been resolved yet
 # 2. $project to select the fields we want to use
 #
 # If you're authoring a new transformer, you'll need to add the
@@ -19,7 +19,7 @@
 # After adding a new field, you'll need to add it to the schema
 # in schema.py - see that file for more information.
 
-query = { "evaluated_on": {"$ne": None} }
+query = {"evaluated_on": {"$ne": None}}
 
 projection = {
     "_id": 0,
@@ -27,7 +27,27 @@ projection = {
     "label": 1,
     "category": 1,
     #
-    **{f"dns_{dns_type}": f"$dns.{dns_type}" for dns_type in ['A', 'AAAA', 'CNAME', 'MX', 'NS', 'SOA', 'TXT']},
+    "dns_dnssec": "$dns.dnssec",
+    "dns_email_extras": {
+        "spf": "$dns.remarks.has_spf",
+        "dkim": "$dns.remarks.has_dkim",
+        "dmarc": "$dns.remarks.has_dmarc",
+    },
+    "dns_ttls": "$dns.ttls",
+    "dns_zone": "$dns.remarks.zone",
+    "dns_has_dnskey": "$dns.remarks.has_dnskey",
+    **{f"dns_{dns_type}": f"$dns.{dns_type}" for dns_type in ['A', 'AAAA', 'SOA', 'zone_SOA', 'MX', 'TXT']},
+    "dns_CNAME": "$dns.CNAME.value",
+    "dns_NS": {"$map": {
+        "input": {"$objectToArray": "$dns.NS"},
+        "as": "item",
+        "in": "$$item.k"
+    }},
+    "dns_MX": {"$map": {
+        "input": {"$objectToArray": "$dns.MX"},
+        "as": "item",
+        "in": {"name": "$$item.k", "priority": "$$item.v.priority"}
+    }},
     #
     "tls": 1,
     "tls_evaluated_on": "$remarks.tls_evaluated_on",
@@ -35,13 +55,15 @@ projection = {
     "domain_registration_date": "$rdap.registration_date",
     "domain_expiration_date": "$rdap.expiration_date",
     "domain_last_changed_date": "$rdap.last_changed_date",
-    #"rdap.entities.registrar.handle": 1,
+    # "rdap.entities.registrar.handle": 1,
     "rdap_dnssec": "$rdap.dnssec",
-    #"rdap_entities": "$rdap.entities",
+    # "rdap_entities": "$rdap.entities",
     #
     "ip_data.geo.country": 1,
     "ip_data.geo.latitude": 1,
     "ip_data.geo.longitude": 1,
-    "ip_data.geo.asn": 1,
+    "ip_data.asn": 1,
     "ip_data.remarks.average_rtt": 1,
+    "ip_data.from_record": 1,
+    "ip_data.ip": 1
 }

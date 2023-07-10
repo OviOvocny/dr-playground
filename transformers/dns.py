@@ -1,10 +1,13 @@
-import datetime
-import re
-import tldextract
-import math
-from pandas import DataFrame, Series, concat
-from pandas.errors import OutOfBoundsDatetime
 from typing import Optional
+
+import numpy as np
+from pandas import DataFrame, Series
+from dns.name import from_text as name_from_text
+from ._helpers import get_normalized_entropy
+
+import schema
+import cProfile
+
 
 def add_dns_record_counts(df: DataFrame) -> DataFrame:
     """
@@ -13,8 +16,12 @@ def add_dns_record_counts(df: DataFrame) -> DataFrame:
     Output: DF with dns_*_count columns added
     """
 
-    for column in [f'dns_{c}' for c in ['A', 'AAAA', 'CNAME', 'MX', 'NS', 'SOA', 'TXT']]:
+    for column in [f'dns_{c}' for c in ['A', 'AAAA', 'MX', 'NS', 'TXT']]:
         df[column + '_count'] = df[column].apply(lambda values: len(values) if values is not None else 0)
+
+    df["dns_SOA_count"] = 0 if df["dns_SOA"] is None else 1
+    df["dns_CNAME_count"] = 0 if df["dns_CNAME"] is None else 1
+
     return df
 
 
@@ -24,127 +31,87 @@ def dns(df: DataFrame) -> DataFrame:
     Input: DF with tls field
     Output: DF with new columns for the fields
     """
-    
+
+    profiler = cProfile.Profile()
+    profiler.enable()
     df = add_dns_record_counts(df)
     df = df.apply(find_derived_dns_features, axis=1)
+    profiler.disable()
+    profiler.dump_stats("dns.stats")
     return df
 
 
-def get_normalized_entropy(text: str) -> Optional[float]:
-    """Function returns the normalized entropy of the
-    string. The function first computes the frequency
-    of each character in the string using
-    the collections.Counter function.
-    It then uses the formula for entropy to compute
-    the entropy of the string, and normalizes it by
-    dividing it by the maximum possible entropy
-    (which is the logarithm of the minimum of the length
-    of the string and the number of distinct characters
-    in the string).
-
-    Args:
-        domain (str): domain string
-
-    Returns:
-        float: normalized entropy
-    """
-    text_len = len(text)
-    if text_len == 0:
+def make_dnssec_score(row: Series) -> Optional[float]:
+    dnssec = row["dns_dnssec"]
+    if dnssec is None:
+        row.drop(["dns_dnssec"], inplace=True)
         return None
 
-    freqs = {}
-    for char in text:
-        if char in freqs:
-            freqs[char] += 1
-        else:
-            freqs[char] = 1
-    
-    entropy = 0.0
-    for f in freqs.values():
-        p = float(f) / text_len
-        entropy -= p * math.log(p, 2)
-    return entropy / text_len
+    # only consider record types that have been resolved for the dn
+    values = [v for (k, v) in dnssec.items() if (row[f"dns_{k}_count"] or 0) > 0]
+    score = 0.0
+
+    if 1 in values:
+        # at least one valid signature
+        # 0 -> -1, 2 -> -2
+        for v in values:
+            if v == 1:
+                score += 1.0
+            elif v == 0:
+                score -= 1.0
+            elif v == 2:
+                score -= 2.0
+    else:
+        # no valid signature, score will be -1
+        score = -len(values)
+
+    row.drop(["dns_dnssec"], inplace=True)
+    return score / len(values)
 
 
+def count_resolved_record_types(row: Series) -> int:
+    ret = 0
+    for record_type in schema.dns_types_all:
+        if row[f"dns_{record_type}"] is not None:
+            ret += 1
+    return ret
 
-"""   
-@param item: one tls field from database
-@param collection_date: date when the collection was made
-@return: return {"success": True/False, "features": dict/None}
-"""  
-def find_derived_dns_features(row: Series) -> Series:
-    
-    #['A', 'AAAA', 'CNAME', 'MX', 'NS', 'SOA', 'TXT']
 
-    # SOA-derived features
-    row["dns_soa_primary_ns_len"] = None
-    row["dns_soa_primary_ns_subdomain_count"] = None
-    row["dns_soa_primary_ns_digit_count"] = None
-    row["dns_soa_primary_ns_entropy"] = None
-    row["dns_soa_admin_email_len"] = None
-    row["dns_soa_admin_email_subdomain_count"] = None
-    row["dns_soa_admin_email_digit_count"] = None
-    row["dns_soa_admin_email_entropy"] = None
-    row["dns_soa_serial"] = None
-    row["dns_soa_refresh"] = None
-    row["dns_soa_retry"] = None
-    row["dns_soa_expire"] = None
-    row["dns_soa_neg_resp_caching_ttl"] = None
+def make_ttl_features(row: Series):
+    (row["dns_ttl_mean"], row["dns_ttl_stdev"],
+     row["dns_ttl_low"], row["dns_ttl_mid"]) = (None, None, None, None)
 
-    # MX-derived features
+    ttls = row["dns_ttls"]
+    if ttls is None:
+        row.drop(["dns_ttls"], inplace=True)
+        return
+
+    ttls = np.array([v for v in ttls.values() if v is not None])
+    if len(ttls) == 0:
+        row.drop(["dns_ttls"], inplace=True)
+        return
+
+    row["dns_ttl_mean"] = np.mean(ttls)
+    row["dns_ttl_stdev"] = np.std(ttls)
+
+    bins = [101, 501]
+    bin_counts = np.bincount(np.digitize(ttls, bins))
+    total_vals = len(ttls)
+
+    row["dns_ttl_low"] = bin_counts[0] / total_vals if len(bin_counts) > 0 else 0
+    row["dns_ttl_mid"] = bin_counts[1] / total_vals if len(bin_counts) > 1 else 0
+
+    row["dns_ttl_distinct_count"] = len(np.unique(ttls))
+
+    row.drop(["dns_ttls"], inplace=True)
+
+
+def make_mx_features(row: Series):
     row["dns_mx_mean_len"] = None
     row["dns_mx_mean_entropy"] = None
     row["dns_domain_name_in_mx"] = 0
-    
-    # TXT-derived features
-    row["dns_txt_google_verified"] = 0
-    row["dns_txt_spf_exists"] = 0
-    row["dns_txt_mean_entropy"] = None
 
     domain_name = row["domain_name"]
-    
-    # SOA-related features
-    if row["dns_SOA"] is not None and len(row["dns_SOA"]) > 0:
-        parts = row["dns_SOA"][0].split()
-        if len(parts) >= 1:
-            primary_ns = parts[0]
-            row["dns_soa_primary_ns_subdomain_count"] = primary_ns.count('.')
-            row["dns_soa_primary_ns_digit_count"] = sum([1 for d in primary_ns if d.isdigit()])
-            row["dns_soa_primary_ns_len"] = len(primary_ns)
-            row["dns_soa_primary_ns_entropy"] = get_normalized_entropy(primary_ns)
-        if len(parts) >= 2:
-            admin_email = parts[1]
-            row["dns_soa_admin_email_subdomain_count"] = admin_email.count('.')
-            row["dns_soa_admin_email_digit_count"] = sum([1 for d in primary_ns if d.isdigit()])
-            row["dns_soa_admin_email_len"] = len(admin_email)
-            row["dns_soa_admin_email_entropy"] = get_normalized_entropy(admin_email)
-        if len(parts) >= 3:
-            try:
-                row["dns_soa_serial"] = int(parts[2])
-            except:
-                pass
-        if len(parts) >= 4:
-            try:
-                row["dns_soa_refresh"] = int(parts[3])
-            except:
-                pass
-        if len(parts) >= 5:
-            try:
-                row["dns_soa_retry"] = int(parts[4])
-            except:
-                pass
-        if len(parts) >= 6:
-            try:
-                row["dns_soa_expire"] = int(parts[5])
-            except:
-                pass
-        if len(parts) >= 7:
-            try:
-                row["dns_soa_neg_resp_caching_ttl"] = int(parts[6])
-            except:
-                pass
-       
-    # MX-related features
     mx_len_sum = 0
     mx_entropy_sum = 0
     if row["dns_MX"] is not None and len(row["dns_MX"]) > 0:
@@ -158,18 +125,122 @@ def find_derived_dns_features(row: Series) -> Series:
             row["dns_mx_mean_len"] = mx_len_sum / len(row["dns_MX"])
         if mx_entropy_sum > 0:
             row["dns_mx_mean_entropy"] = mx_entropy_sum / len(row["dns_MX"])
-    
-    # Google site verification in TXT
+
+
+def make_soa_features(row: Series):
+    prepare_dn_string_features(row, "soa_primary_ns")
+    prepare_dn_string_features(row, "soa_admin_email")
+    row["dns_soa_serial"] = None
+    row["dns_soa_refresh"] = None
+    row["dns_soa_retry"] = None
+    row["dns_soa_expire"] = None
+    row["dns_soa_min_ttl"] = None
+
+    soa = row["dns_SOA"]
+    # only consider zone SOA if it's not a SOA of a TLD
+    if soa is None and row["dns_zone"] is not None and row["dns_zone_level"] > 2:
+        soa = row["dns_zone_SOA"]
+
+    if soa is not None:
+        primary_ns = soa["primary_ns"]
+        make_dn_string_features(row, "soa_primary_ns", primary_ns)
+
+        admin_email = soa["resp_mailbox_dname"]
+        make_dn_string_features(row, "soa_admin_email", admin_email)
+
+        # flattening
+        row["dns_soa_serial"] = soa["serial"]
+        row["dns_soa_refresh"] = soa["refresh"]
+        row["dns_soa_retry"] = soa["retry"]
+        row["dns_soa_expire"] = soa["expire"]
+        row["dns_soa_min_ttl"] = soa["min_ttl"]
+
+    row.drop(["dns_SOA", "dns_zone_SOA"], inplace=True)
+
+
+def prepare_dn_string_features(row: Series, feature_name_base: str):
+    row[f"dns_{feature_name_base}_level"] = None
+    row[f"dns_{feature_name_base}_digit_count"] = None
+    row[f"dns_{feature_name_base}_len"] = None
+    row[f"dns_{feature_name_base}_entropy"] = None
+
+
+def make_dn_string_features(row: Series, feature_name_base: str, dn: str):
+    domain_name = name_from_text(dn)
+    row[f"dns_{feature_name_base}_level"] = len(domain_name) - 1
+    row[f"dns_{feature_name_base}_digit_count"] = sum([1 for d in dn if d.isdigit()])
+    row[f"dns_{feature_name_base}_len"] = len(dn)
+    row[f"dns_{feature_name_base}_entropy"] = get_normalized_entropy(dn)
+
+
+def make_txt_features(row: Series):
+    # TXT-derived features
+    row["dns_txt_mean_entropy"] = None
+    row["dns_txt_external_verification_score"] = 0
+
     txt_entropy_sum = 0
+    verification_score = 0
+    verifiers = ("google-site-verification=", "ms=", "apple-domain-verification=",
+                 "facebook-domain-verification=")
+    total_non_empty = 0
+
     if row["dns_TXT"] is not None and len(row["dns_TXT"]) > 0:
         for rec in row['dns_TXT']:
+            if len(rec) == 0:
+                continue
+
+            total_non_empty += 1
             txt_entropy_sum += get_normalized_entropy(rec)
-            if "google-site-verification" in rec:
-                row["dns_txt_google_verified"] = 1
-            if "spf" in rec:
-                row["dns_txt_spf_exists"] = 1
+
+            rec = str(rec).lower()
+            for verifier in verifiers:
+                if verifier in rec:
+                    verification_score += 1
+
         if txt_entropy_sum > 0:
-            row["dns_txt_mean_entropy"] = txt_entropy_sum / len(row["dns_TXT"])
+            row["dns_txt_mean_entropy"] = txt_entropy_sum / total_non_empty
+
+        row["dns_txt_external_verification_score"] = verification_score
+
+
+def find_derived_dns_features(row: Series) -> Series:
+    domain_name = name_from_text(row["domain_name"])
+
+    # DN level
+    row["dns_dn_level"] = len(domain_name) - 1
+    row["dns_distance_from_zone"] = row["dns_dn_level"]
+    prepare_dn_string_features(row, "zone")
+
+    if row["dns_zone"] is not None:
+        make_dn_string_features(row, "zone", row["dns_zone"])
+        row["dns_distance_from_zone"] = row["dns_dn_level"] - row["dns_zone_level"]
+
+    # Total number of record types resolved for the DN
+    row["dns_record_type_count"] = count_resolved_record_types(row)
+
+    # DNSSEC
+    row["dns_has_dnskey"] = 1 if row["dns_has_dnskey"] else 0
+    if row["dns_has_dnskey"]:
+        row["dns_dnssec_score"] = make_dnssec_score(row)
+    else:
+        row["dns_dnssec_score"] = 0.0
+
+    # TTL
+    make_ttl_features(row)
+
+    # SOA-derived features
+    make_soa_features(row)
+
+    # MX-derived features
+    make_mx_features(row)
+
+    # TXT features
+    make_txt_features(row)
+
+    # E-mail/TXT features (flattening)
+    row["dns_txt_spf_exists"] = 1 if row["dns_email_extras"]["spf"] else 0
+    row["dns_txt_dkim_exists"] = 1 if row["dns_email_extras"]["dkim"] else 0
+    row["dns_txt_dmarc_exists"] = 1 if row["dns_email_extras"]["dmarc"] else 0
+    row.drop(["dns_email_extras"], inplace=True)
 
     return row
-    

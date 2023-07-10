@@ -5,6 +5,7 @@ import numpy as np
 
 import math
 import tldextract
+from ._helpers import get_normalized_entropy
 
 phishing_keywords = {
     "account", "action", "alert", "app", "auth", "bank", "billing", "center", "chat", "device", "fax", "event",
@@ -12,6 +13,7 @@ phishing_keywords = {
     "my", "new", "nitro", "now", "online", "pay", "promo", "real", "required", "safe", "secure", "security",
     "service", "signin", "support", "track", "update", "verification", "verify", "vm", "web"
 }
+
 
 def longest_consonant_seq(domain: str) -> int:
     """Function returns longest consonant sequence
@@ -35,6 +37,7 @@ def longest_consonant_seq(domain: str) -> int:
             max_len = current_len
     return max_len
 
+
 def get_consonant_ratio(domain: str) -> float:
     """Function returns the consonant ratio
     which represents the total amount of consonants
@@ -48,9 +51,10 @@ def get_consonant_ratio(domain: str) -> float:
     """
     domain = domain.lower()
     consonants = set("bcdfghjklmnpqrstvwxyz")
-    consonant_count = sum( 1 for char in domain if char in consonants )
+    consonant_count = sum(1 for char in domain if char in consonants)
     domain_len = len(domain)
     return consonant_count / domain_len if consonant_count > 0 else 0.0
+
 
 def get_hex_ratio(domain: str) -> float:
     """Function computes hexadecimal ratio
@@ -65,41 +69,6 @@ def get_hex_ratio(domain: str) -> float:
     hex_count = sum(char in hex_chars for char in domain)
     return hex_count / len(domain)
 
-
-def get_normalized_entropy(domain: str) -> Optional[float]:
-    """Function returns the normalized entropy of the
-    string. The function first computes the frequency
-    of each character in the string using
-    the collections.Counter function.
-    It then uses the formula for entropy to compute
-    the entropy of the string, and normalizes it by
-    dividing it by the maximum possible entropy
-    (which is the logarithm of the minimum of the length
-    of the string and the number of distinct characters
-    in the string).
-
-    Args:
-        domain (str): domain string
-
-    Returns:
-        float: normalized entropy
-    """
-    domain_len = len(domain)
-    if domain_len == 0:
-        return None
-
-    freqs = {}
-    for char in domain:
-        if char in freqs:
-            freqs[char] += 1
-        else:
-            freqs[char] = 1
-    
-    entropy = 0.0
-    for f in freqs.values():
-        p = float(f) / domain_len
-        entropy -= p * math.log(p, 2)
-    return entropy / domain_len
 
 def contains_www(domain: str) -> int:
     """
@@ -119,7 +88,8 @@ def contains_www(domain: str) -> int:
         return 1
     return 0
 
-def count_subdomains(domain:str) -> int:
+
+def count_subdomains(domain: str) -> int:
     """
     Function returns the number of subdomains
     in the domain name 
@@ -141,7 +111,8 @@ def count_subdomains(domain:str) -> int:
             subdomains_count -= 1
         return subdomains_count
 
-def verify_tld(domain_suffix:str, known_tlds:set) -> int:
+
+def verify_tld(domain_suffix: str, known_tlds: set) -> int:
     """
     Function checks whether the domain tld is in 
     the public suffix database
@@ -159,6 +130,7 @@ def verify_tld(domain_suffix:str, known_tlds:set) -> int:
     else:
         return 0
 
+
 def remove_tld(domain: str) -> str:
     """Function removes tld from
     the domain name
@@ -169,11 +141,12 @@ def remove_tld(domain: str) -> str:
     Returns:
         str: Domain without TLD
     """
-    ext =  tldextract.extract(domain)
+    ext = tldextract.extract(domain)
     subdomain = ext.subdomain
     sld = ext.domain
     result = subdomain + "." + sld if subdomain else sld
     return result
+
 
 def vowel_count(domain: str) -> int:
     """Function returns the number of vowels in
@@ -186,7 +159,8 @@ def vowel_count(domain: str) -> int:
     vowels = set("aeiouy")
     return sum(1 for char in domain.lower() if char in vowels)
 
-def extract_subdomains(domain:str) -> list:
+
+def extract_subdomains(domain: str) -> list:
     """
     Function returns the list of the subdomains and 
     sld from domain name
@@ -204,6 +178,7 @@ def extract_subdomains(domain:str) -> list:
     sld = ext.domain
     domain_list = subdomains + [sld]
     return domain_list
+
 
 def total_underscores_and_hyphens(domain: str) -> int:
     """Function returns the total number of underscores
@@ -230,7 +205,7 @@ def consecutive_chars(domain: str) -> int:
     """
     if len(domain) == 0:
         return 0
-    
+
     max_count = 1
     count = 1
     prev_char = domain[0]
@@ -243,6 +218,7 @@ def consecutive_chars(domain: str) -> int:
         prev_char = char
     return max_count
 
+
 def lex(df: DataFrame) -> DataFrame:
     """
     Calculate domain lexical features.
@@ -250,35 +226,43 @@ def lex(df: DataFrame) -> DataFrame:
     Output: DF with lexical features derived from domain_name added
     """
     df['lex_name_len'] = df['domain_name'].apply(len)
-    #NOTUSED# df['lex_dots_count'] = df['domain_name'].apply(lambda x: x.count('.'))   # (with www and TLD) :-> lex_sub_count used instead
-    #NOTUSED# df['lex_subdomain_len'] = df['domain_name'].apply(lambda x: sum([len(y) for y in x.split('.')]))  # without dots
+    # NOTUSED# df['lex_dots_count'] = df['domain_name'].apply(lambda x: x.count('.'))   # (with www and TLD) :-> lex_sub_count used instead
+    # NOTUSED# df['lex_subdomain_len'] = df['domain_name'].apply(lambda x: sum([len(y) for y in x.split('.')]))  # without dots
     df['lex_digit_count'] = df['domain_name'].apply(lambda x: sum([1 for y in x if y.isdigit()]))
     df['lex_has_digit'] = df['domain_name'].apply(lambda x: 1 if sum([1 for y in x if y.isdigit()]) > 0 else 0)
     df['lex_phishing_keyword_count'] = df['domain_name'].apply(lambda x: sum(1 for w in phishing_keywords if w in x))
     df['lex_vowel_count'] = df['domain_name'].apply(lambda x: vowel_count(x))
     df['lex_underscore_hyphen_count'] = df['domain_name'].apply(lambda x: total_underscores_and_hyphens(x))
     df['lex_consecutive_chars'] = df['domain_name'].apply(lambda x: consecutive_chars(x))
-    #NOTUSED# df['lex_norm_entropy'] = df['domain_name'].apply(get_normalized_entropy)              # Normalized entropy od the domain name
+    # NOTUSED# df['lex_norm_entropy'] = df['domain_name'].apply(get_normalized_entropy)              # Normalized entropy od the domain name
 
     # Save temporary domain name parts for lex feature calculation
     df['tmp_tld'] = df['domain_name'].apply(lambda x: tldextract.extract(x).suffix)
     df['tmp_sld'] = df['domain_name'].apply(lambda x: tldextract.extract(x).domain)
     df['tmp_stld'] = df['tmp_sld'] + "." + df['tmp_tld']
-    df['tmp_concat_subdomains'] = df['domain_name'].apply(lambda x: remove_tld(x).replace(".",""))
+    df['tmp_concat_subdomains'] = df['domain_name'].apply(lambda x: remove_tld(x).replace(".", ""))
 
-    df['lex_tld_len'] = df['tmp_tld'].apply(len)                                                    # Length of TLD
-    df['lex_sld_len'] = df['tmp_sld'].apply(len)                                                    # Length of SLD
-    df['lex_sub_count'] = df['domain_name'].apply(lambda x: count_subdomains(x))                    # Number of subdomains (without www)
-    df['lex_stld_unique_char_count'] = df['tmp_stld'].apply(lambda x: len(set(x.replace(".", "")))) # Number of unique characters in TLD and SLD
-    df['lex_begins_with_digit'] = df['domain_name'].apply(lambda x: 1 if x[0].isdigit() else 0)     # Is first character a digit
+    df['lex_tld_len'] = df['tmp_tld'].apply(len)  # Length of TLD
+    df['lex_sld_len'] = df['tmp_sld'].apply(len)  # Length of SLD
+    df['lex_sub_count'] = df['domain_name'].apply(lambda x: count_subdomains(x))  # Number of subdomains (without www)
+    df['lex_stld_unique_char_count'] = df['tmp_stld'].apply(
+        lambda x: len(set(x.replace(".", ""))))  # Number of unique characters in TLD and SLD
+    df['lex_begins_with_digit'] = df['domain_name'].apply(
+        lambda x: 1 if x[0].isdigit() else 0)  # Is first character a digit
     df['lex_www_flag'] = df['domain_name'].apply(lambda x: 1 if (x.split("."))[0] == "www" else 0)  # Begins with www
-    df['lex_sub_max_consonant_len'] = df['tmp_concat_subdomains'].apply(longest_consonant_seq)      # Max consonant sequence length
-    df['lex_sub_norm_entropy'] = df['tmp_concat_subdomains'].apply(get_normalized_entropy)          # Normalized entropy od the domain name (without TLD)
-    df['lex_sub_digit_count'] = df['tmp_concat_subdomains'].apply(lambda x: (sum([1 for y in x if y.isdigit()])) if len(x) > 0 else 0).astype("float")
-    df['lex_sub_digit_ratio'] = df['lex_sub_digit_count'] / df['lex_name_len']                      # Digit ratio in subdomains
-    df['lex_sub_consonant_ratio'] = df['tmp_concat_subdomains'].apply(lambda x: (sum(1 for c in x if c in 'bcdfghjklmnpqrstvwxyz') / len(x)) if len(x) > 0 else 0)
-    df['lex_sub_non_alphanum_ratio'] = df['tmp_concat_subdomains'].apply(lambda x: (sum(1 for c in x if not c.isalnum()) / len(x)) if len(x) > 0 else 0)
-    df['lex_sub_hex_ratio'] = df['tmp_concat_subdomains'].apply(lambda x: (sum(1 for c in x if c in '0123456789ABCDEFabcdef') / len(x)) if len(x) > 0 else 0)
+    df['lex_sub_max_consonant_len'] = df['tmp_concat_subdomains'].apply(
+        longest_consonant_seq)  # Max consonant sequence length
+    df['lex_sub_norm_entropy'] = df['tmp_concat_subdomains'].apply(
+        get_normalized_entropy)  # Normalized entropy od the domain name (without TLD)
+    df['lex_sub_digit_count'] = df['tmp_concat_subdomains'].apply(
+        lambda x: (sum([1 for y in x if y.isdigit()])) if len(x) > 0 else 0).astype("float")
+    df['lex_sub_digit_ratio'] = df['lex_sub_digit_count'] / df['lex_name_len']  # Digit ratio in subdomains
+    df['lex_sub_consonant_ratio'] = df['tmp_concat_subdomains'].apply(
+        lambda x: (sum(1 for c in x if c in 'bcdfghjklmnpqrstvwxyz') / len(x)) if len(x) > 0 else 0)
+    df['lex_sub_non_alphanum_ratio'] = df['tmp_concat_subdomains'].apply(
+        lambda x: (sum(1 for c in x if not c.isalnum()) / len(x)) if len(x) > 0 else 0)
+    df['lex_sub_hex_ratio'] = df['tmp_concat_subdomains'].apply(
+        lambda x: (sum(1 for c in x if c in '0123456789ABCDEFabcdef') / len(x)) if len(x) > 0 else 0)
 
     # Drop temporary columns
     df = df.drop(['tmp_tld', 'tmp_sld', 'tmp_stld', 'tmp_concat_subdomains'], axis=1, inplace=False)
