@@ -7,7 +7,6 @@ def map_ip_data(ip_data):
             'countries': None,
             'latitudes': None,
             'longitudes': None,
-            'average_rtt': None,
         })
     else:
         ip_data = [ip for ip in ip_data if ip['geo'] is not None]
@@ -15,7 +14,6 @@ def map_ip_data(ip_data):
             'countries': [ip['geo']['country'] for ip in ip_data],
             'latitudes': [ip['geo']['latitude'] for ip in ip_data],
             'longitudes': [ip['geo']['longitude'] for ip in ip_data],
-            'average_rtt': [ip['remarks']['average_rtt'] for ip in ip_data],
         })
 
 # This is just a function that takes nested fields and surfaces them

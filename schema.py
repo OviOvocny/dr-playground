@@ -1,5 +1,5 @@
 from pymongoarrow.api import Schema
-from pyarrow import list_, string, int64, float64, bool_, struct, timestamp
+from pyarrow import list_, string, int64, float64, bool_, struct, dictionary, timestamp
 
 # Welcome to the schema file. This is where you define the schema of
 # the data you're loading from MongoDB. This is needed because the
@@ -55,11 +55,35 @@ ip_data = struct([
         ("country", string()),
         ("latitude", float64()),
         ("longitude", float64()),
-        ("asn", int64()),
     ])),
     ("remarks", struct([
         ("average_rtt", float64()),
     ])),
+    ("asn", struct([
+        ("asn", int64()),
+        ("as_org", string()),
+        ("network_address", string()),
+        ("prefix_len", int64())
+    ])),
+    ("from_record", string()),
+    ("ip", string())
+])
+
+dns_types_all = ('A', 'AAAA', 'CNAME', 'MX', 'NS', 'SOA', 'TXT')
+
+dns_types_ints = {
+    **{dns_type: int64() for dns_type in dns_types_all}
+}
+
+dns_soa = struct([
+    ("primary_ns", string()),
+    ("resp_mailbox_dname", string()),
+    # TODO: Does it make sense to represent the serial number as a number?
+    ("serial", int64()),
+    ("refresh", int64()),
+    ("retry", int64()),
+    ("expire", int64()),
+    ("min_ttl", int64())
 ])
 
 schema = Schema({
@@ -68,7 +92,24 @@ schema = Schema({
     "category": string(),
     #
     "tls_evaluated_on": timestamp('ms'),
-    **{f"dns_{dns_type}": list_(string()) for dns_type in ['A', 'AAAA', 'CNAME', 'MX', 'NS', 'SOA', 'TXT']},
+    #
+    "dns_dnssec": dns_types_ints,
+    "dns_email_extras": struct([
+        ("spf", bool_()),
+        ("dkim", bool_()),
+        ("dmarc", bool_()),
+    ]),
+    "dns_ttls": dns_types_ints,
+    "dns_zone": string(),
+    "dns_has_dnskey": bool_(),
+    **{f"dns_{dns_type}": list_(string()) for dns_type in ('A', 'AAAA', 'NS', 'TXT')},
+    "dns_CNAME": string(),
+    "dns_SOA": dns_soa,
+    "dns_zone_SOA": dns_soa,
+    "dns_MX": list_(struct([
+        ("name", string()),
+        ("priority", int64())
+    ])),
     "domain_registration_date": timestamp('ms'),
     "domain_expiration_date": timestamp('ms'),
     "domain_last_changed_date": timestamp('ms'),
