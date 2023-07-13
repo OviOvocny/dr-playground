@@ -13,3 +13,4 @@ pymongo>=4.4.0
 pyarrow>=12.0.1
 numpy>=1.25.1
 shap>=0.41.0
+nltk>=3.8.1

@@ -1,12 +1,33 @@
 from typing import Optional
-
+import json
 import numpy as np
 from pandas import DataFrame, Series
 from dns.name import from_text as name_from_text
 from ._helpers import get_normalized_entropy
-
 import schema
 import cProfile
+
+
+def dns(df: DataFrame) -> DataFrame:
+    """
+    Transform the tls field into new columns and add ngram matches.
+    Input: DataFrame with tls field, ngram frequency dictionary
+    Output: DataFrame with new columns for the fields
+    """
+
+    profiler = cProfile.Profile()
+
+    # get ngram frequency dictionary from json file ngam_freq.json
+    with open('ngram_freq.json') as f:
+        ngram_freq = json.load(f)
+
+    profiler.enable()
+    df = add_dns_record_counts(df)
+    df = df.apply(find_derived_dns_features, args=(ngram_freq,), axis=1)
+    profiler.disable()
+    profiler.dump_stats("dns.stats")
+
+    return df
 
 
 def add_dns_record_counts(df: DataFrame) -> DataFrame:
@@ -25,20 +46,18 @@ def add_dns_record_counts(df: DataFrame) -> DataFrame:
     return df
 
 
-def dns(df: DataFrame) -> DataFrame:
+# Calculate ngram matches, find if bigram or trigram of this domain name is present in the ngram list
+def find_ngram_matches(text: str, ngrams: dict) -> int:
     """
-    Transform tls field into new columns.
-    Input: DF with tls field
-    Output: DF with new columns for the fields
+    Find the number of ngram matches in the text.
+    Input: text string, ngrams dictionary
+    Output: number of matches
     """
-
-    profiler = cProfile.Profile()
-    profiler.enable()
-    df = add_dns_record_counts(df)
-    df = df.apply(find_derived_dns_features, axis=1)
-    profiler.disable()
-    profiler.dump_stats("dns.stats")
-    return df
+    matches = 0
+    for ngram in ngrams:
+        if ngram in text:
+            matches += 1
+    return matches
 
 
 def make_dnssec_score(row: Series) -> Optional[float]:
@@ -203,7 +222,7 @@ def make_txt_features(row: Series):
         row["dns_txt_external_verification_score"] = verification_score
 
 
-def find_derived_dns_features(row: Series) -> Series:
+def find_derived_dns_features(row: Series, ngram_freq: dict) -> Series:
     domain_name = name_from_text(row["domain_name"])
 
     # DN level
@@ -242,5 +261,14 @@ def find_derived_dns_features(row: Series) -> Series:
     row["dns_txt_dkim_exists"] = 1 if row["dns_email_extras"]["dkim"] else 0
     row["dns_txt_dmarc_exists"] = 1 if row["dns_email_extras"]["dmarc"] else 0
     row.drop(["dns_email_extras"], inplace=True)
+
+    # Calculate ngram matches, find if bigram or trigram of this domain name is present in the ngram list
+    row["dns_bigram_matches"] = 0
+    row["dns_trigram_matches"] = 0
+
+    domain_name = row["domain_name"]
+    if domain_name is not None:
+        row["dns_bigram_matches"] += find_ngram_matches(domain_name, ngram_freq["bigram_freq"])
+        row["dns_trigram_matches"] += find_ngram_matches(domain_name, ngram_freq["trigram_freq"])
 
     return row
