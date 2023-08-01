@@ -71,12 +71,13 @@ def get_df(collection_name: str, cache_mode: str):
         for attempt in range(5):
             try:
                 table = db[collection_name].find_arrow_all(query, schema=schema, projection=projection)
-                pq.write_table(table, f'cache/{collection_name}.parquet') # no pylance, this IS reachable
+                print(f"[{collection_name}] Writing to parquet")
+                pq.write_table(table,  f'cache/{collection_name}.parquet',
+                               coerce_timestamps='ms', allow_truncated_timestamps=True)  # no pylance, this IS reachable
                 return table.to_pandas()
             except pymongo.errors.AutoReconnect:
-                print(f'[{collection_name}] AutoReconnect, retrying', file=sys.stderr)
+                print(f'[{collection_name}] AutoReconnect, retrying for {(attempt+1)} time', file=sys.stderr)
                 continue
-            return None
 
 
 import transformers

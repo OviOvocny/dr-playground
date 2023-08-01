@@ -19,7 +19,10 @@
 # After adding a new field, you'll need to add it to the schema
 # in schema.py - see that file for more information.
 
-query = {"evaluated_on": {"$ne": None}}
+query = {
+    "evaluated_on": {"$ne": None},
+    "remarks.dns_evaluated_on": {"$ne": None}
+}
 
 projection = {
     "_id": 0,
