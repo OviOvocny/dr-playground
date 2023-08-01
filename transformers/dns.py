@@ -209,7 +209,10 @@ def make_txt_features(row: Series):
                 continue
 
             total_non_empty += 1
-            txt_entropy_sum += get_normalized_entropy(rec)
+            if get_normalized_entropy(rec) != None:
+                txt_entropy_sum += get_normalized_entropy(rec)
+            else:
+                txt_entropy_sum += 0
 
             rec = str(rec).lower()
             for verifier in verifiers:
