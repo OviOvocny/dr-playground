@@ -62,7 +62,7 @@ def get_df(collection_name: str, cache_mode: str):
     # load from cache if it exists and we're not refreshing
     if not will_refresh and os.path.exists(f'cache/{collection_name}.parquet'):
         print(f'[{collection_name}] Loading from cache', file=sys.stderr)
-        return pq.read_table(f'cache/{collection_name}.parquet').to_pandas()
+        return pq.read_table(f'cache/{collection_name}.parquet').to_pandas(timestamp_as_object=True)
     # otherwise, refresh from mongo
     else:
         if not will_refresh:
@@ -73,8 +73,9 @@ def get_df(collection_name: str, cache_mode: str):
                 table = db[collection_name].find_arrow_all(query, schema=schema, projection=projection)
                 print(f"[{collection_name}] Writing to parquet")
                 pq.write_table(table,  f'cache/{collection_name}.parquet',
-                               coerce_timestamps='ms', allow_truncated_timestamps=True)  # no pylance, this IS reachable
-                return table.to_pandas()
+                               coerce_timestamps='ms',
+                               allow_truncated_timestamps=True)  # no pylance, this IS reachable
+                return table.to_pandas(timestamp_as_object=True)
             except pymongo.errors.AutoReconnect:
                 print(f'[{collection_name}] AutoReconnect, retrying for {(attempt+1)} time', file=sys.stderr)
                 continue
