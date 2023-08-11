@@ -9,5 +9,6 @@ class Config:
   # Collections to process by loader - {label: collection_name}
   COLLECTIONS = {
       'benign': 'benign_2307',
-      'malign': 'malign_2307',
+      'malign': 'misp_2307',
+      'cesnet': 'cesnet_2307'
   }

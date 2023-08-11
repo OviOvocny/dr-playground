@@ -39,14 +39,9 @@ def ip_entropy(values) -> float:
     return entropy4 + entropy6
 
 
-def make_asn_features(row: Series) -> Series:
-    row["ip_as_address_entropy"] = None
-    row["ip_asn_entropy"] = None
-    row["ip_distinct_as_count"] = None
-
-    ip_data = row["ip_data"]
+def make_asn_features(ip_data):
     if ip_data is None:
-        return row
+        return None, None, None
 
     asns = []
     dist_asns = set()
@@ -67,12 +62,13 @@ def make_asn_features(row: Series) -> Series:
             prefixes6.append(int.from_bytes(ipaddress.IPv6Address(ip).packed, "big"))
 
     if len(asns) == 0:
-        return row
+        return None, None, None
 
-    row["ip_as_address_entropy"] = make_entropy(prefixes4) + make_entropy(prefixes6)
-    row["ip_asn_entropy"] = make_entropy(asns)
-    row["ip_distinct_as_count"] = len(dist_asns)
-    return row
+    as_address_entropy = make_entropy(prefixes4) + make_entropy(prefixes6)
+    asn_entropy = make_entropy(asns)
+    distinct_as_count = len(dist_asns)
+
+    return as_address_entropy, asn_entropy, distinct_as_count
 
 
 def ip(df: DataFrame) -> DataFrame:
@@ -90,6 +86,7 @@ def ip(df: DataFrame) -> DataFrame:
     df['ip_entropy'] = df['ip_data'].apply(ip_entropy)
 
     # add features based on autonomous system information
-    df = df.apply(make_asn_features, axis=1)
+    df["ip_as_address_entropy"], df["ip_asn_entropy"], df["ip_distinct_as_count"] = zip(
+        *df["ip_data"].apply(make_asn_features))
 
     return df
