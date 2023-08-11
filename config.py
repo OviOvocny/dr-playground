@@ -8,7 +8,7 @@ class Config:
   MONGO_DB = 'drdb'
   # Collections to process by loader - {label: collection_name}
   COLLECTIONS = {
-      'benign': 'benign_2307',
-      'malign': 'misp_2307',
-      'cesnet': 'cesnet_2307'
+      'cesnet_2307': 'cesnet_2307',
+      'phishing_2307': 'misp_2307',
+      'benign_2307': 'benign_2307'
   }
