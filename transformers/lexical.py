@@ -225,6 +225,10 @@ def lex(df: DataFrame) -> DataFrame:
     Input: DF with domain_name column
     Output: DF with lexical features derived from domain_name added
     """
+
+    # The dataframe tends to get fragmented here; this should defragment it
+    df = df.copy(True)
+
     df['lex_name_len'] = df['domain_name'].apply(len)
     # NOTUSED# df['lex_dots_count'] = df['domain_name'].apply(lambda x: x.count('.'))   # (with www and TLD) :-> lex_sub_count used instead
     # NOTUSED# df['lex_subdomain_len'] = df['domain_name'].apply(lambda x: sum([len(y) for y in x.split('.')]))  # without dots
@@ -265,6 +269,5 @@ def lex(df: DataFrame) -> DataFrame:
         lambda x: (sum(1 for c in x if c in '0123456789ABCDEFabcdef') / len(x)) if len(x) > 0 else 0)
 
     # Drop temporary columns
-    df = df.drop(['tmp_tld', 'tmp_sld', 'tmp_stld', 'tmp_concat_subdomains'], axis=1, inplace=False)
-
+    df.drop(columns=['tmp_tld', 'tmp_sld', 'tmp_stld', 'tmp_concat_subdomains'], inplace=True)
     return df

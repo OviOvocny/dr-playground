@@ -1,36 +1,80 @@
-from typing import Optional
+from typing import Optional, List, Dict
 import json
 import numpy as np
 from pandas import DataFrame, Series
-from dns.name import from_text as name_from_text
 from ._helpers import get_normalized_entropy
+from .lexical import count_subdomains
 import schema
-import cProfile
 
 
 def dns(df: DataFrame) -> DataFrame:
-    """
-    Transform the tls field into new columns and add ngram matches.
-    Input: DataFrame with tls field, ngram frequency dictionary
-    Output: DataFrame with new columns for the fields
-    """
+    df = add_dns_record_counts(df)
 
-    profiler = cProfile.Profile()
+    # Domain name level
+    df["dns_dn_level"] = df["domain_name"].apply(lambda dn: count_subdomains(dn))
 
-    # get ngram frequency dictionary from json file ngam_freq.json
+    # Zone DN info
+    df["dns_zone"].fillna('', inplace=True)
+    df["dns_zone_level"] = df["dns_zone"].apply(lambda dn: count_subdomains(dn))
+    df["dns_zone_digit_count"] = df["dns_zone"].str.count(r'\d')
+    df["dns_zone_len"] = df["dns_zone"].str.len()
+    df["dns_zone_entropy"] = df["dns_zone"].apply(lambda dn: get_normalized_entropy(dn))
+
+    # Count resolved record types
+    df["dns_resolved_record_types"] = df.apply(count_resolved_record_types, axis=1)
+
+    # DNSSEC features
+    df["dns_has_dnskey"] = df["dns_has_dnskey"].replace({True: 1, False: 0, None: 0})
+    df["dns_dnssec_score"] = df.apply(make_dnssec_score, axis=1)
+
+    # TTL features
+    df["dns_ttl_mean"], df["dns_ttl_stdev"], df["dns_ttl_low"], df["dns_ttl_mid"], df["dns_ttl_distinct_count"] = zip(
+        *df["dns_ttls"].apply(make_ttl_features))
+
+    # SOA features
+    df["dns_SOA_tmp"] = df.apply(
+        lambda row: row["dns_zone_SOA"] if row["dns_SOA"] is None and row["dns_zone_level"] > 0 else row["dns_SOA"],
+        axis=1)
+
+    df["dns_soa_primary_ns_level"], df["dns_soa_primary_ns_digit_count"], df["dns_soa_primary_ns_len"], df[
+        "dns_soa_primary_ns_entropy"] = zip(*df["dns_SOA_tmp"].apply(
+        lambda soa: make_string_features(soa["primary_ns"]) if soa is not None else (None, None, None, None)))
+
+    df["dns_soa_email_level"], df["dns_soa_email_digit_count"], df["dns_soa_email_len"], df[
+        "dns_soa_email_entropy"] = zip(*df["dns_SOA_tmp"].apply(
+        lambda soa: make_string_features(soa["resp_mailbox_dname"]) if soa is not None else (None, None, None, None)))
+
+    df["dns_soa_serial"], df["dns_soa_refresh"], df["dns_soa_retry"], df["dns_soa_expire"], df["dns_soa_min_ttl"] = zip(
+        *df["dns_SOA_tmp"].apply(
+            lambda soa: (soa["serial"], soa["refresh"], soa["retry"], soa["expire"], soa["min_ttl"]) if soa else (
+                None, None, None, None, None)))
+
+    df.drop(columns=["dns_SOA_tmp"], inplace=True)
+
+    # MX features
+    df["dns_domain_name_in_mx"] = df[["domain_name", "dns_MX"]].apply(
+        lambda row: None if row["dns_MX"] is None else (row["domain_name"] in row["dns_MX"]), axis=1).astype(bool)
+    df["dns_mx_mean_len"], df["dns_mx_mean_entropy"] = zip(*df["dns_MX"].apply(make_mx_features))
+
+    # TXT features
+    df["dns_txt_mean_entropy"], df["dns_txt_external_verification_score"] = zip(*df["dns_TXT"].apply(make_txt_features))
+
+    # E-mail/TXT features (flattening)
+    df["dns_txt_spf_exists"], df["dns_txt_dkim_exists"], df["dns_txt_dmarc_exists"] = zip(
+        *df["dns_email_extras"].apply(lambda e: (int(e["spf"] or 0), int(e["dkim"] or 0), int(e["dmarc"] or 0))))
+
+    # N-grams
     with open('ngram_freq.json') as f:
         ngram_freq = json.load(f)
 
-    profiler.enable()
-    df = add_dns_record_counts(df)
-    df = df.apply(find_derived_dns_features, args=(ngram_freq,), axis=1)
-    profiler.disable()
-    profiler.dump_stats("dns.stats")
+    df["dns_bigram_matches"] = df["domain_name"].apply(find_ngram_matches, args=(ngram_freq["bigram_freq"],))
+    df["dns_trigram_matches"] = df["domain_name"].apply(find_ngram_matches, args=(ngram_freq["trigram_freq"],))
 
     return df
 
 
-def add_dns_record_counts(df: DataFrame) -> DataFrame:
+# OK
+def add_dns_record_counts(df: DataFrame) -> DataFrame:  # OK
     """
     Calculate number of DNS records for each domain.
     Input: DF with dns_* columns
@@ -40,12 +84,13 @@ def add_dns_record_counts(df: DataFrame) -> DataFrame:
     for column in [f'dns_{c}' for c in ['A', 'AAAA', 'MX', 'NS', 'TXT']]:
         df[column + '_count'] = df[column].apply(lambda values: len(values) if values is not None else 0)
 
-    df["dns_SOA_count"] = 0 if df["dns_SOA"] is None else 1
-    df["dns_CNAME_count"] = 0 if df["dns_CNAME"] is None else 1
+    df["dns_SOA_count"] = df["dns_SOA"].apply(lambda x: 0 if x is None else 1)
+    df["dns_CNAME_count"] = df["dns_CNAME"].apply(lambda x: 0 if x is None else 1)
 
     return df
 
 
+# OK
 # Calculate ngram matches, find if bigram or trigram of this domain name is present in the ngram list
 def find_ngram_matches(text: str, ngrams: dict) -> int:
     """
@@ -60,15 +105,18 @@ def find_ngram_matches(text: str, ngrams: dict) -> int:
     return matches
 
 
+# OK
 def make_dnssec_score(row: Series) -> Optional[float]:
     dnssec = row["dns_dnssec"]
     if dnssec is None:
-        row.drop(["dns_dnssec"], inplace=True)
-        return None
+        return 0.0
 
     # only consider record types that have been resolved for the dn
     values = [v for (k, v) in dnssec.items() if (row[f"dns_{k}_count"] or 0) > 0]
     score = 0.0
+
+    if len(values) == 0:
+        return 0.0
 
     if 1 in values:
         # at least one valid signature
@@ -84,10 +132,10 @@ def make_dnssec_score(row: Series) -> Optional[float]:
         # no valid signature, score will be -1
         score = -len(values)
 
-    row.drop(["dns_dnssec"], inplace=True)
     return score / len(values)
 
 
+# OK
 def count_resolved_record_types(row: Series) -> int:
     ret = 0
     for record_type in schema.dns_types_all:
@@ -96,182 +144,81 @@ def count_resolved_record_types(row: Series) -> int:
     return ret
 
 
-def make_ttl_features(row: Series):
-    (row["dns_ttl_mean"], row["dns_ttl_stdev"],
-     row["dns_ttl_low"], row["dns_ttl_mid"]) = (None, None, None, None)
-
-    ttls = row["dns_ttls"]
+# OK
+def make_ttl_features(ttls: Optional[Dict[str, int]]):
     if ttls is None:
-        row.drop(["dns_ttls"], inplace=True)
-        return
+        return None, None, None, None, None
 
     ttls = np.array([v for v in ttls.values() if v is not None])
     if len(ttls) == 0:
-        row.drop(["dns_ttls"], inplace=True)
-        return
+        return None, None, None, None, None
 
-    row["dns_ttl_mean"] = np.mean(ttls)
-    row["dns_ttl_stdev"] = np.std(ttls)
+    mean = np.mean(ttls)
+    std = np.std(ttls)
 
     bins = [101, 501]
     bin_counts = np.bincount(np.digitize(ttls, bins))
     total_vals = len(ttls)
 
-    row["dns_ttl_low"] = bin_counts[0] / total_vals if len(bin_counts) > 0 else 0
-    row["dns_ttl_mid"] = bin_counts[1] / total_vals if len(bin_counts) > 1 else 0
+    low = bin_counts[0] / total_vals if len(bin_counts) > 0 else 0
+    mid = bin_counts[1] / total_vals if len(bin_counts) > 1 else 0
+    dist = len(np.unique(ttls))
 
-    row["dns_ttl_distinct_count"] = len(np.unique(ttls))
-
-    row.drop(["dns_ttls"], inplace=True)
+    return mean, std, low, mid, dist
 
 
-def make_mx_features(row: Series):
-    row["dns_mx_mean_len"] = None
-    row["dns_mx_mean_entropy"] = None
-    row["dns_domain_name_in_mx"] = 0
+# OK
+def make_mx_features(mx: Optional[List[str]]):
+    if mx is None:
+        return None, None
 
-    domain_name = row["domain_name"]
     mx_len_sum = 0
     mx_entropy_sum = 0
-    if row["dns_MX"] is not None and len(row["dns_MX"]) > 0:
-        for mailserver in row['dns_MX']:
-            mx_len_sum += len(mailserver)
-            mx_entropy_sum += get_normalized_entropy(mailserver)
-            if domain_name in mailserver:
-                row["dns_domain_name_in_mx"] = 1
-                break
-        if mx_len_sum > 0:
-            row["dns_mx_mean_len"] = mx_len_sum / len(row["dns_MX"])
-        if mx_entropy_sum > 0:
-            row["dns_mx_mean_entropy"] = mx_entropy_sum / len(row["dns_MX"])
+    total = len(mx)
+
+    for mailserver in mx:
+        mx_len_sum += len(mailserver)
+        mx_entropy_sum += get_normalized_entropy(mailserver)
+
+    return mx_len_sum / total, mx_entropy_sum / total
 
 
-def make_soa_features(row: Series):
-    prepare_dn_string_features(row, "soa_primary_ns")
-    prepare_dn_string_features(row, "soa_admin_email")
-    row["dns_soa_serial"] = None
-    row["dns_soa_refresh"] = None
-    row["dns_soa_retry"] = None
-    row["dns_soa_expire"] = None
-    row["dns_soa_min_ttl"] = None
-
-    soa = row["dns_SOA"]
-    # only consider zone SOA if it's not a SOA of a TLD
-    if soa is None and row["dns_zone"] is not None and row["dns_zone_level"] > 2:
-        soa = row["dns_zone_SOA"]
-
-    if soa is not None:
-        primary_ns = soa["primary_ns"]
-        make_dn_string_features(row, "soa_primary_ns", primary_ns)
-
-        admin_email = soa["resp_mailbox_dname"]
-        make_dn_string_features(row, "soa_admin_email", admin_email)
-
-        # flattening
-        row["dns_soa_serial"] = soa["serial"]
-        row["dns_soa_refresh"] = soa["refresh"]
-        row["dns_soa_retry"] = soa["retry"]
-        row["dns_soa_expire"] = soa["expire"]
-        row["dns_soa_min_ttl"] = soa["min_ttl"]
-
-    row.drop(["dns_SOA", "dns_zone_SOA"], inplace=True)
+# OK
+def make_string_features(dn: str):
+    return count_subdomains(dn), sum([1 for d in dn if d.isdigit()]), len(dn), get_normalized_entropy(dn)
 
 
-def prepare_dn_string_features(row: Series, feature_name_base: str):
-    row[f"dns_{feature_name_base}_level"] = None
-    row[f"dns_{feature_name_base}_digit_count"] = None
-    row[f"dns_{feature_name_base}_len"] = None
-    row[f"dns_{feature_name_base}_entropy"] = None
-
-
-def make_dn_string_features(row: Series, feature_name_base: str, dn: str):
-    domain_name = name_from_text(dn)
-    row[f"dns_{feature_name_base}_level"] = len(domain_name) - 1
-    row[f"dns_{feature_name_base}_digit_count"] = sum([1 for d in dn if d.isdigit()])
-    row[f"dns_{feature_name_base}_len"] = len(dn)
-    row[f"dns_{feature_name_base}_entropy"] = get_normalized_entropy(dn)
-
-
-def make_txt_features(row: Series):
-    # TXT-derived features
-    row["dns_txt_mean_entropy"] = None
-    row["dns_txt_external_verification_score"] = 0
-
+# OK
+def make_txt_features(txt: Optional[List[str]]):
     txt_entropy_sum = 0
     verification_score = 0
     verifiers = ("google-site-verification=", "ms=", "apple-domain-verification=",
                  "facebook-domain-verification=")
     total_non_empty = 0
 
-    if row["dns_TXT"] is not None and len(row["dns_TXT"]) > 0:
-        for rec in row['dns_TXT']:
-            if len(rec) == 0:
-                continue
+    if txt is None:
+        return None, 0
 
-            total_non_empty += 1
-            if get_normalized_entropy(rec) != None:
-                txt_entropy_sum += get_normalized_entropy(rec)
-            else:
-                txt_entropy_sum += 0
+    for rec in txt:
+        if len(rec) == 0:
+            continue
 
-            rec = str(rec).lower()
-            for verifier in verifiers:
-                if verifier in rec:
-                    verification_score += 1
+        total_non_empty += 1
+        entropy = get_normalized_entropy(rec)
 
-        if txt_entropy_sum > 0:
-            row["dns_txt_mean_entropy"] = txt_entropy_sum / total_non_empty
+        if entropy is not None:
+            txt_entropy_sum += entropy
+        else:
+            txt_entropy_sum += 0
 
-        row["dns_txt_external_verification_score"] = verification_score
+        rec = rec.lower()
+        for verifier in verifiers:
+            if verifier in rec:
+                verification_score += 1
 
-
-def find_derived_dns_features(row: Series, ngram_freq: dict) -> Series:
-    domain_name = name_from_text(row["domain_name"])
-
-    # DN level
-    row["dns_dn_level"] = len(domain_name) - 1
-    row["dns_distance_from_zone"] = row["dns_dn_level"]
-    prepare_dn_string_features(row, "zone")
-
-    if row["dns_zone"] is not None:
-        make_dn_string_features(row, "zone", row["dns_zone"])
-        row["dns_distance_from_zone"] = row["dns_dn_level"] - row["dns_zone_level"]
-
-    # Total number of record types resolved for the DN
-    row["dns_record_type_count"] = count_resolved_record_types(row)
-
-    # DNSSEC
-    row["dns_has_dnskey"] = 1 if row["dns_has_dnskey"] else 0
-    if row["dns_has_dnskey"]:
-        row["dns_dnssec_score"] = make_dnssec_score(row)
+    if txt_entropy_sum > 0:
+        txt_entropy_sum = txt_entropy_sum / total_non_empty
     else:
-        row["dns_dnssec_score"] = 0.0
+        txt_entropy_sum = None
 
-    # TTL
-    make_ttl_features(row)
-
-    # SOA-derived features
-    make_soa_features(row)
-
-    # MX-derived features
-    make_mx_features(row)
-
-    # TXT features
-    make_txt_features(row)
-
-    # E-mail/TXT features (flattening)
-    row["dns_txt_spf_exists"] = 1 if row["dns_email_extras"]["spf"] else 0
-    row["dns_txt_dkim_exists"] = 1 if row["dns_email_extras"]["dkim"] else 0
-    row["dns_txt_dmarc_exists"] = 1 if row["dns_email_extras"]["dmarc"] else 0
-    row.drop(["dns_email_extras"], inplace=True)
-
-    # Calculate ngram matches, find if bigram or trigram of this domain name is present in the ngram list
-    row["dns_bigram_matches"] = 0
-    row["dns_trigram_matches"] = 0
-
-    domain_name = row["domain_name"]
-    if domain_name is not None:
-        row["dns_bigram_matches"] += find_ngram_matches(domain_name, ngram_freq["bigram_freq"])
-        row["dns_trigram_matches"] += find_ngram_matches(domain_name, ngram_freq["trigram_freq"])
-
-    return row
+    return txt_entropy_sum, verification_score

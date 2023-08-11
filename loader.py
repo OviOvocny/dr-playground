@@ -43,7 +43,7 @@ def save_df(df: DataFrame, name: str, prefix: str = ''):
     if not os.path.exists(prefix_path):
         os.makedirs(prefix_path)
     print(f'Saving to {prefix_path}/{name}.parquet', file=sys.stderr)
-    pq.write_table(table, f'{prefix_path}/{name}.parquet')
+    pq.write_table(table, f'{prefix_path}/{name}.parquet', coerce_timestamps='ms', allow_truncated_timestamps=True)
 
 from projection import query, projection
 from schema import schema
@@ -62,7 +62,7 @@ def get_df(collection_name: str, cache_mode: str):
     # load from cache if it exists and we're not refreshing
     if not will_refresh and os.path.exists(f'cache/{collection_name}.parquet'):
         print(f'[{collection_name}] Loading from cache', file=sys.stderr)
-        return pq.read_table(f'cache/{collection_name}.parquet').to_pandas(timestamp_as_object=True)
+        return pq.read_table(f'cache/{collection_name}.parquet').to_pandas(safe=False, self_destruct=True, split_blocks=True)
     # otherwise, refresh from mongo
     else:
         if not will_refresh:
@@ -74,8 +74,8 @@ def get_df(collection_name: str, cache_mode: str):
                 print(f"[{collection_name}] Writing to parquet")
                 pq.write_table(table,  f'cache/{collection_name}.parquet',
                                coerce_timestamps='ms',
-                               allow_truncated_timestamps=True)  # no pylance, this IS reachable
-                return table.to_pandas(timestamp_as_object=True)
+                               allow_truncated_timestamps=True)
+                return table.to_pandas(safe=False, self_destruct=True, split_blocks=True)
             except pymongo.errors.AutoReconnect:
                 print(f'[{collection_name}] AutoReconnect, retrying for {(attempt+1)} time', file=sys.stderr)
                 continue

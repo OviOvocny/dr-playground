@@ -29,11 +29,11 @@ from pyarrow import list_, string, int64, float64, bool_, struct, dictionary, ti
 # https://mongo-arrow.readthedocs.io/en/latest/supported_types.html
 
 
-tls_data = {
-    "protocol": string(),
-    "cipher": string(),
-    "count": int64(),
-    "certificates": list_(struct([
+tls_data = struct([
+    ("protocol", string()),
+    ("cipher", string()),
+    ("count", int64()),
+    ("certificates", list_(struct([
         ("common_name", string()),
         ("country", string()),
         ("is_root", bool_()),
@@ -47,8 +47,8 @@ tls_data = {
             ("name", string()),
             ("value", string()),
         ]))),
-    ])),
-}
+    ]))),
+])
 
 ip_data = struct([
     ("geo", struct([
@@ -115,5 +115,5 @@ schema = Schema({
     "domain_last_changed_date": timestamp('ms'),
     "rdap_dnssec": bool_(),
     "tls": tls_data,
-    "ip_data": list_(struct(ip_data)),
+    "ip_data": list_(ip_data),
 })
