@@ -53,14 +53,16 @@ projection = {
     }},
     #
     "tls": 1,
+    "dns_evaluated_on": "$remarks.dns_evaluated_on",
+    "rdap_evaluated_on": "$remarks.rdap_evaluated_on",
     "tls_evaluated_on": "$remarks.tls_evaluated_on",
     #
-    "domain_registration_date": "$rdap.registration_date",
-    "domain_expiration_date": "$rdap.expiration_date",
-    "domain_last_changed_date": "$rdap.last_changed_date",
+    "rdap_registration_date": "$rdap.registration_date",
+    "rdap_expiration_date": "$rdap.expiration_date",
+    "rdap_last_changed_date": "$rdap.last_changed_date",
     # "rdap.entities.registrar.handle": 1,
     "rdap_dnssec": "$rdap.dnssec",
-    # "rdap_entities": "$rdap.entities",
+    "rdap_entities": "$rdap.entities",
     #
     "ip_data.geo.country": 1,
     "ip_data.geo.latitude": 1,

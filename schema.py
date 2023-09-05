@@ -86,11 +86,20 @@ dns_soa = struct([
     ("min_ttl", int64())
 ])
 
+rdap_entity = struct([
+    ("handle", string()),
+    ("type", string()),
+    ("name", string()),
+    ("email", string())
+])
+
 schema = Schema({
     "domain_name": string(),
     "label": string(),
     "category": string(),
     #
+    "dns_evaluated_on": timestamp('ms'),
+    "rdap_evaluated_on": timestamp('ms'),
     "tls_evaluated_on": timestamp('ms'),
     #
     "dns_dnssec": dns_types_ints,
@@ -110,10 +119,16 @@ schema = Schema({
         ("name", string()),
         ("priority", int64())
     ])),
-    "domain_registration_date": timestamp('ms'),
-    "domain_expiration_date": timestamp('ms'),
-    "domain_last_changed_date": timestamp('ms'),
+    "rdap_registration_date": timestamp('ms'),
+    "rdap_expiration_date": timestamp('ms'),
+    "rdap_last_changed_date": timestamp('ms'),
     "rdap_dnssec": bool_(),
+    "rdap_entities": struct([
+        ("registrant", list_(rdap_entity)),
+        ("registrar", list_(rdap_entity)),
+        ("abuse", list_(rdap_entity)),
+        ("admin", list_(rdap_entity))
+    ]),
     "tls": tls_data,
     "ip_data": list_(ip_data),
 })

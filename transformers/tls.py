@@ -57,10 +57,10 @@ tls_cipher_ids = {
 
 """   
 @param item: one tls field from database
-@param collection_data: date when the collection was made
+@param collection_date: date when the collection was made
 @return: return {"success": True/False, "features": dict/None}
 """  
-def analyze_tls(item: dict, collection_data: datetime.datetime) -> dict:
+def analyze_tls(item: dict, collection_date: datetime.datetime) -> dict:
     # We dont hane tls data for this domain
     if item is None:
         features = { 
@@ -106,13 +106,15 @@ def analyze_tls(item: dict, collection_data: datetime.datetime) -> dict:
     common_names = []
     
     ### ROOT CERTIFICATE ###
-    root_crt_validity__len = -1
-    root_crt_time_to_expire = -1
+    root_crt_validity_len = -1
+    root_crt_lifetime = -1
+    #root_crt_time_to_expire = -1
     
     
     ### LEAF CERTIFICATE ###
     leaf_crt_validity_len = -1
-    leaf_cert_time_to_live = -1
+    leaf_crt_lifetime = -1
+    #leaf_cert_time_to_live = -1
     
     
     ### BAIC FEATURES ###
@@ -158,24 +160,31 @@ def analyze_tls(item: dict, collection_data: datetime.datetime) -> dict:
             break
         
         try:
-            time_to_expire = certificate['validity_end'] - collection_data
-            time_to_expire = round(time_to_expire.total_seconds() / (60*60*24))
+            lifetime = round((collection_date - certificate['validity_start']).total_seconds() / (60*60*24))
         except OutOfBoundsDatetime:
-            print(certificate['validity_end'], collection_data)
+            print(certificate['validity_start'], collection_date)
+            lifetime = -1
+
+        try:
+            time_to_expire = round((certificate['validity_end'] - collection_date).total_seconds() / (60*60*24))
+        except OutOfBoundsDatetime:
+            print(certificate['validity_end'], collection_date)
             time_to_expire = -1
         
         if time_to_expire < 0:
             expired_chain = 1
             break
-            
     
         if cert_counter == 1:
-            leaf_cert_time_to_live = time_to_expire
             leaf_crt_validity_len = validity_len
+            leaf_crt_lifetime = lifetime
+            #leaf_cert_time_to_live = time_to_expire
+            
             
         if certificate['is_root']:
-            root_crt_time_to_expire = time_to_expire
-            root_crt_validity__len = validity_len
+            root_crt_validity_len = validity_len
+            root_crt_lifetime = lifetime
+            #root_crt_time_to_expire = time_to_expire
         
         if certificate['common_name']:
             common_names.append(certificate['common_name'])
@@ -268,10 +277,12 @@ def analyze_tls(item: dict, collection_data: datetime.datetime) -> dict:
         "tls_chain_len": item['count'],                              # Length of certificate chain
         "tls_version_id": tls_version_id,                            # Evaluated TLS version
         "tls_cipher_id": tls_cipher_id,                              # Evaluated cipher
-        "tls_root_cert_validity_len": root_crt_validity__len,        # Total validity time of root certificate
-        "tls_root_cert_validity_remaining": root_crt_time_to_expire, # Time to expire of root certificate from time of collection
+        "tls_root_cert_validity_len": root_crt_validity_len,        # Total validity time of root certificate
+        "tls_root_cert_lifetime": root_crt_lifetime,                 # How long was the root certificate valid at the time of collection
+        #NOTUSED# "tls_root_cert_validity_remaining": root_crt_time_to_expire, # Time to expire of root certificate from time of collection
         "tls_leaf_cert_validity_len": leaf_crt_validity_len,         # Total validity time of leaf certificate      
-        "tls_leaf_cert_validity_remaining": leaf_cert_time_to_live,  # Time to expire of leaf certificate from time of collection      
+        "tls_leaf_cert_lifetime": leaf_crt_lifetime,                 # How long was the leaf certificate valid at the time of collection
+        #NOTUSED# "tls_leaf_cert_validity_remaining": leaf_cert_time_to_live,  # Time to expire of leaf certificate from time of collection      
         #NOTUSED# "tls_mean_certs_validity_len": mean_cert_len,      # Mean validity time of all certificates in chain including root
         "tls_broken_chain": broken_chain,                            # Chain was never valid, 
         "tls_expired_chain": expired_chain,                          # Chain already expired at time of collection

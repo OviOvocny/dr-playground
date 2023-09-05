@@ -4,6 +4,8 @@ import schema
 
 nontraining_fields = [
     "domain_name",
+    "dns_evaluated_on",
+    "rdap_evaluated_on",
     "tls_evaluated_on",
 
     # IP data
@@ -20,11 +22,14 @@ nontraining_fields = [
     "dns_zone_SOA",
     *[f"dns_{t}" for t in schema.dns_types_all],
 
-    "domain_registration_date",
-    "domain_last_changed_date",
-    "domain_expiration_date",
+    "rdap_registration_date",
+    "rdap_last_changed_date",
+    "rdap_expiration_date",
     "rdap_dnssec",
-    # "rdap_entities"
+    "rdap_entities"
+
+    #"tls_root_cert_validity_remaining",
+    #"tls_leaf_cert_validity_remaining"
 ]
 
 
