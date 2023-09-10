@@ -21,7 +21,8 @@
 
 query = {
     "evaluated_on": {"$ne": None},
-    "remarks.dns_evaluated_on": {"$ne": None}
+    "remarks.dns_evaluated_on": {"$ne": None},
+    "$or": [{"ip_data:": None}, {"ip_data.remarks.geo_evaluated_on": {"$ne": None}}]
 }
 
 projection = {
