@@ -59,7 +59,6 @@ tls_data = struct([
 ip_rdap_data = struct([
     ("handle", string()),
     ("parent_handle", string()),
-    ("name", string()),
     ("type", string()),
     ("last_changed_date", timestamp("ms")),
     ("registration_date", timestamp("ms")),
@@ -150,10 +149,11 @@ schema = Schema({
     "rdap_last_changed_date": timestamp('ms'),
     "rdap_dnssec": bool_(),
     "rdap_entities": struct([
+        ("administrative", list_(rdap_entity)),
         ("registrant", list_(rdap_entity)),
         ("registrar", list_(rdap_entity)),
         ("abuse", list_(rdap_entity)),
-        ("admin", list_(rdap_entity))
+        ("technical", list_(rdap_entity))
     ]),
     "tls": tls_data,
     "ip_data": list_(ip_data),
