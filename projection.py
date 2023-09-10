@@ -71,5 +71,6 @@ projection = {
     "ip_data.asn": 1,
     "ip_data.remarks.average_rtt": 1,
     "ip_data.from_record": 1,
-    "ip_data.ip": 1
+    "ip_data.ip": 1,
+    "ip_data.rdap": 1
 }

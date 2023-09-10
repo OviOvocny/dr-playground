@@ -28,6 +28,12 @@ from pyarrow import list_, string, int64, float64, bool_, struct, dictionary, ti
 # arrow types. See the docs for more info:
 # https://mongo-arrow.readthedocs.io/en/latest/supported_types.html
 
+rdap_entity = struct([
+    ("handle", string()),
+    ("type", string()),
+    ("name", string()),
+    ("email", string())
+])
 
 tls_data = struct([
     ("protocol", string()),
@@ -50,6 +56,32 @@ tls_data = struct([
     ]))),
 ])
 
+ip_rdap_data = struct([
+    ("handle", string()),
+    ("parent_handle", string()),
+    ("name", string()),
+    ("type", string()),
+    ("last_changed_date", timestamp("ms")),
+    ("registration_date", timestamp("ms")),
+    ("expiration_date", timestamp("ms")),
+    ("rir", string()),
+    ("entities", struct([
+        ("registrant", list_(rdap_entity)),
+        ("registrar", list_(rdap_entity)),
+        ("abuse", list_(rdap_entity)),
+        ("technical", list_(rdap_entity)),
+        ("noc", list_(rdap_entity)),
+        ("administrative", list_(rdap_entity))
+    ])),
+    ("country", string()),
+    ("ip_version", int64()),
+    ("assignment_type", string()),
+    ("network", struct([
+        ("prefix_length", int64()),
+        ("network_address", string())
+    ]))
+])
+
 ip_data = struct([
     ("geo", struct([
         ("country", string()),
@@ -66,7 +98,8 @@ ip_data = struct([
         ("prefix_len", int64())
     ])),
     ("from_record", string()),
-    ("ip", string())
+    ("ip", string()),
+    ("rdap", ip_rdap_data)
 ])
 
 dns_types_all = ('A', 'AAAA', 'CNAME', 'MX', 'NS', 'SOA', 'TXT')
@@ -84,13 +117,6 @@ dns_soa = struct([
     ("retry", int64()),
     ("expire", int64()),
     ("min_ttl", int64())
-])
-
-rdap_entity = struct([
-    ("handle", string()),
-    ("type", string()),
-    ("name", string()),
-    ("email", string())
 ])
 
 schema = Schema({
