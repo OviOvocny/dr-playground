@@ -50,14 +50,53 @@ tls_data = struct([
     ]))),
 ])
 
-ip_data = struct([
-    ("geo", struct([
-        ("country", string()),
-        ("latitude", float64()),
-        ("longitude", float64()),
-    ])),
+rdap_entity = struct([
+    ("handle", string()),
+    ("type", string()),
+    ("name", string()),
+    ("email", string())
+])
+
+ip_data_entry = struct([
+    ("ip", string()),
+    #("from_record", string()),
     ("remarks", struct([
         ("average_rtt", float64()),
+    ])),
+    ("from_record", string()),
+    ("rdap", struct([
+        ("handle", string()),
+        ("parent_handle", string()),
+        #("whois_server", string()),
+        ("type", string()),
+        #("terms_of_service_url", string()),
+        #("copyright_notice", string()),
+        #("description", _list(string())),
+        ("last_changed_date", timestamp('ms')),
+        ("registration_date", timestamp('ms')),
+        ("expiration_date", timestamp('ms')),
+        #("url", string()),
+        #("rir", string()),
+        ("entities", struct([
+            ("registrant", list_(rdap_entity)),
+            ("registrar", list_(rdap_entity)),
+            ("abuse", list_(rdap_entity)),
+            ("technical", list_(rdap_entity)),
+            ("noc", list_(rdap_entity)),
+            ("administrative", list_(rdap_entity)),
+            ("admin", list_(rdap_entity)) # Is this really somewhere? TODO: check
+        ])),
+        ("country", string()),
+        ("ip_version", int64()),
+        ("assignment_type", string()),
+        ("network", struct([
+            ("prefix_length", int64()),
+            ("network_address", string()),
+            #("netmask", string()),
+            #("broadcast_address", string()),
+            #("hostmask", string()),
+        ])),
+
     ])),
     ("asn", struct([
         ("asn", int64()),
@@ -65,8 +104,11 @@ ip_data = struct([
         ("network_address", string()),
         ("prefix_len", int64())
     ])),
-    ("from_record", string()),
-    ("ip", string())
+    ("geo", struct([
+        ("country", string()),
+        ("latitude", float64()),
+        ("longitude", float64()),
+    ]))
 ])
 
 dns_types_all = ('A', 'AAAA', 'CNAME', 'MX', 'NS', 'SOA', 'TXT')
@@ -84,13 +126,6 @@ dns_soa = struct([
     ("retry", int64()),
     ("expire", int64()),
     ("min_ttl", int64())
-])
-
-rdap_entity = struct([
-    ("handle", string()),
-    ("type", string()),
-    ("name", string()),
-    ("email", string())
 ])
 
 schema = Schema({
@@ -124,11 +159,13 @@ schema = Schema({
     "rdap_last_changed_date": timestamp('ms'),
     "rdap_dnssec": bool_(),
     "rdap_entities": struct([
+        ("administrative", list_(rdap_entity)),
         ("registrant", list_(rdap_entity)),
         ("registrar", list_(rdap_entity)),
         ("abuse", list_(rdap_entity)),
-        ("admin", list_(rdap_entity))
+        ("admin", list_(rdap_entity)), # Is this really somewhere? TODO: check
+        ("technical", list_(rdap_entity))
     ]),
     "tls": tls_data,
-    "ip_data": list_(ip_data),
+    "ip_data": list_(ip_data_entry),
 })

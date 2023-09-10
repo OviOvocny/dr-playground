@@ -62,13 +62,29 @@ projection = {
     "rdap_last_changed_date": "$rdap.last_changed_date",
     # "rdap.entities.registrar.handle": 1,
     "rdap_dnssec": "$rdap.dnssec",
-    "rdap_entities": "$rdap.entities",
+    "rdap_entities": "$rdap.entities", # RDAP entities for the domain
     #
+    """
     "ip_data.geo.country": 1,
     "ip_data.geo.latitude": 1,
     "ip_data.geo.longitude": 1,
     "ip_data.asn": 1,
     "ip_data.remarks.average_rtt": 1,
     "ip_data.from_record": 1,
-    "ip_data.ip": 1
+    "ip_data.ip": 1,
+    "ip_data.rdap" : 1  # RDAP data to each releated IP address
+    """
+
+    #"ip_data": 1,
+
+    "ip_data.geo.country": 1,
+    "ip_data.geo.latitude": 1,
+    "ip_data.geo.longitude": 1,
+    "ip_data.asn": 1,
+    "ip_data.remarks.average_rtt": 1,
+    "ip_data.from_record": 1,
+    "ip_data.ip": 1,
+    "ip_data.rdap.ip_version": 1,
+    "ip_data.rdap.entities": 1,
+    "ip_data.rdap.network": 1,
 }
