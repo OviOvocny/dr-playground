@@ -8,10 +8,12 @@ class Config:
   MONGO_DB = 'drdb'
   # Collections to process by loader - {label: collection_name}
   COLLECTIONS = {
-      #'cesnet_2307': 'cesnet_2307',
-      'phishing_2307': 'misp_2307',
-      #'benign_2307': 'benign_2307',
-      #'cesnet2': 'cesnet2',
-      #'benign_cesnet_intersect_2307': 'benign_cesnet_intersect_2307'
-      'benign_cesnet_union_2307': 'benign_cesnet_union_2307'
+      # 'cesnet': 'cesnet_2307',
+      # 'cesnet2': 'cesnet2',
+      # 'benign': 'benign_2307',
+      # 'phishing': 'misp_2307',
+      # 'benign_cesnet_intersect': 'benign_cesnet_intersect_2307'
+      # 'benign_cesnet_union': 'benign_cesnet_union_2307',
+      # 'benign_cesnet2_intersect': 'benign_cesnet2_intersect',
+      # 'malware': 'malware'
   }

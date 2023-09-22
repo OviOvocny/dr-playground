@@ -44,5 +44,6 @@ def drop_nontrain_df(df: DataFrame) -> DataFrame:
     """
     Drop non-training columns.
     """
-    df.drop(columns=nontraining_fields, inplace=True)
+    fields = [x for x in nontraining_fields if x in df.columns]
+    df.drop(columns=fields, inplace=True)
     return df

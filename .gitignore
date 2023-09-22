@@ -4,7 +4,7 @@ floor/*
 cache/**/*.parquet
 *.parquet
 .ipynb_checkpoints
-shap_values.pickle.dat
+*.pickle.dat
 
 __pycache__/
 *.py[cod]
