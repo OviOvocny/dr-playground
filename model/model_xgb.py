@@ -90,8 +90,8 @@ def find_optimal_model(X, y, grid=None, use_gpu: bool = True, n_splits=5, random
     # this is your grid of parameters to search through, every combination will be tried
     if grid is None:
         grid = _default_search_grid
-        if use_gpu:
-            grid["sampling_method"] = ["gradient_based", "uniform"]
+    if use_gpu:
+        grid["sampling_method"] = ["gradient_based", "uniform"]
 
     cv = StratifiedKFold(n_splits=n_splits, shuffle=True, random_state=random_state)
     grid_search = GridSearchCV(
