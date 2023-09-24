@@ -151,7 +151,7 @@ def make_test(test_parquets: str | List[str],
     df.drop(columns=['label'], inplace=True)
 
     if sample < 1.0:
-        df["_label"] = labels
+        df = df.assign(**{"_label": labels})
         df = df.sample(frac=sample)
         print(f"Using {sample} sample for the testing set, that is {len(df)} entries.")
         labels = Series(df["_label"], copy=True)
@@ -179,3 +179,6 @@ def basic_preprocessor_table(table: Table):
 
 def basic_preprocessor_df(df: DataFrame):
     return cast_timestamp(df)
+
+
+make_test(["../floor/phishing", "../floor/malware", "../floor/malware", "../floor/malware"], [1, 0, 1, 0], 0.5, basic_preprocessor_table, basic_preprocessor_df)
