@@ -143,7 +143,7 @@ def make_test(test_parquets: str | List[str],
         label_series = []
         for i in range(len(table_lens)):
             label_series.append(Series(class_map[i], range(table_lens[i])))
-        labels = pandas.concat(label_series)
+        labels = pandas.concat(label_series, ignore_index=True)
     else:
         raise Exception("class_map must be either a mapping dictionary or a list specifying the class for each "
                         "parquet in test_parquets")
