@@ -46,8 +46,8 @@ def make_train(benign_parquet: str, malign_parquet: str,
 
     benign = benign.cast(malign.schema)
 
-    benign_df = benign.to_pandas(self_destruct=True, split_blocks=True)  # type: DataFrame
-    malign_df = malign.to_pandas(self_destruct=True, split_blocks=True)  # type: DataFrame
+    benign_df = benign.to_pandas(split_blocks=True)  # type: DataFrame
+    malign_df = malign.to_pandas(split_blocks=True)  # type: DataFrame
 
     if benign_sample < 1.0:
         benign_df = benign_df.sample(frac=benign_sample, random_state=random_state)
@@ -68,6 +68,8 @@ def make_train(benign_parquet: str, malign_parquet: str,
 
     del benign_df
     del malign_df
+    del benign
+    del malign
 
     return df, labels, benign_label, malign_label
 
@@ -123,7 +125,7 @@ def make_test(test_parquets: str | List[str],
         tables.append(data)
         table_lens.append(len(data))
 
-    df = pa.concat_tables(tables=tables).to_pandas(self_destruct=True, split_blocks=True)
+    df = pa.concat_tables(tables=tables).to_pandas(split_blocks=True)
 
     if transformation_df is not None:
         df = transformation_df(df)
