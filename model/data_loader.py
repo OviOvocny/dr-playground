@@ -51,8 +51,10 @@ def make_train(benign_parquet: str, malign_parquet: str,
 
     if benign_sample < 1.0:
         benign_df = benign_df.sample(frac=benign_sample, random_state=random_state)
+        print(f"Using {benign_sample} sample for benign, that is {len(benign_df)} entries.")
     if malign_sample < 1.0:
         malign_df = malign_df.sample(frac=malign_sample, random_state=random_state)
+        print(f"Using {malign_sample} sample for malign, that is {len(malign_df)} entries.")
 
     df = pandas.concat([benign_df, malign_df], copy=False)
 
@@ -104,6 +106,7 @@ def make_test(test_parquets: str | List[str],
 
     tables = []
     table_lens = []
+    total = 0
     first_table = None
     for parquet in test_parquets:
         fn = f"{parquet}.parquet"
@@ -117,18 +120,22 @@ def make_test(test_parquets: str | List[str],
         if transformation_table is not None:
             data = transformation_table(data)
 
-        print(f"Loaded {parquet} for test ({len(data)} entries)")
+        print(f"Loaded {parquet} for test ({len(data)} entries).")
         if first_table is None:
             first_table = data
         else:
             data = data.cast(first_table.schema)
         tables.append(data)
         table_lens.append(len(data))
+        total += len(data)
 
     df = pa.concat_tables(tables=tables).to_pandas(split_blocks=True)
 
     if transformation_df is not None:
         df = transformation_df(df)
+
+    if len(tables) > 1:
+        print(f"Total testing entries: {total}.")
 
     if isinstance(class_map, dict):
         labels = df['label'].apply(lambda x: class_map[x])
@@ -146,6 +153,7 @@ def make_test(test_parquets: str | List[str],
     if sample < 1.0:
         df["_label"] = labels
         df = df.sample(frac=sample)
+        print(f"Using {sample} sample for the testing set, that is {len(df)} entries.")
         labels = Series(df["_label"], copy=True)
         df.drop(columns=["_label"], inplace=True)
 
