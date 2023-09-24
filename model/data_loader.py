@@ -15,7 +15,7 @@ def make_train_test(benign_parquet: str, malign_parquet: str,
                     transformation_table: Optional[Callable[[Table], Table]] = None,
                     transformation_df: Optional[Callable[[DataFrame], DataFrame]] = None,
                     test_size=0.3, benign_sample: float = 1.0, malign_sample: float = 1.0, random_state=42):
-    x, y, b, m = make_train(benign_parquet, malign_parquet, transformation_df, transformation_table,
+    x, y, b, m = make_train(benign_parquet, malign_parquet, transformation_table, transformation_df,
                             benign_sample, malign_sample, random_state)
 
     x_train, x_test, y_train, y_test = train_test_split(
