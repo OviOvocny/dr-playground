@@ -4,16 +4,19 @@ import pandas
 import pyarrow as pa
 import pyarrow.parquet as pq
 from pandas import DataFrame, Series
+from pyarrow import Table
 from sklearn.model_selection import train_test_split
-from transformers.drop_nontrain import drop_nontrain_df as drop_nontrain
+from transformers.drop_nontrain import drop_nontrain_table as drop_nontrain
 from transformers.cast_timestamp import cast_timestamp
 import os.path
 
 
 def make_train_test(benign_parquet: str, malign_parquet: str,
-                    transformation: Optional[Callable[[DataFrame], DataFrame]] = None,
+                    transformation_table: Optional[Callable[[Table], Table]] = None,
+                    transformation_df: Optional[Callable[[DataFrame], DataFrame]] = None,
                     test_size=0.3, benign_sample: float = 1.0, malign_sample: float = 1.0, random_state=42):
-    x, y, b, m = make_train(benign_parquet, malign_parquet, transformation, benign_sample, malign_sample, random_state)
+    x, y, b, m = make_train(benign_parquet, malign_parquet, transformation_df, transformation_table,
+                            benign_sample, malign_sample, random_state)
 
     x_train, x_test, y_train, y_test = train_test_split(
         x, y,
@@ -28,10 +31,15 @@ def make_train_test(benign_parquet: str, malign_parquet: str,
 
 
 def make_train(benign_parquet: str, malign_parquet: str,
-               transformation: Optional[Callable[[DataFrame], DataFrame]] = None,
+               transformation_table: Optional[Callable[[Table], Table]] = None,
+               transformation_df: Optional[Callable[[DataFrame], DataFrame]] = None,
                benign_sample: float = 1.0, malign_sample: float = 1.0, random_state: Optional[int] = 42):
     malign = pq.read_table(f"{malign_parquet}.parquet")
     benign = pq.read_table(f"{benign_parquet}.parquet")
+
+    if transformation_table is not None:
+        benign = transformation_table(benign)
+        malign = transformation_table(malign)
 
     print(f"Loaded {malign_parquet} for malign ({len(malign)} entries), {benign_parquet} "
           f"for benign ({len(benign)} entries)")
@@ -51,8 +59,8 @@ def make_train(benign_parquet: str, malign_parquet: str,
     benign_label = str(benign["label"][0])
     malign_label = str(malign["label"][0])
 
-    if transformation is not None:
-        df = transformation(df)
+    if transformation_df is not None:
+        df = transformation_df(df)
 
     class_map = {benign_label: 0, malign_label: 1}
     labels = df['label'].apply(lambda x: class_map[x])
@@ -67,7 +75,8 @@ def make_train(benign_parquet: str, malign_parquet: str,
 def make_test(test_parquets: str | List[str],
               class_map: Dict[str, int] | List[Literal[0, 1]] | Literal[0, 1],
               sample: float = 1.0,
-              transformation: Optional[Callable[[DataFrame], DataFrame]] = None):
+              transformation_table: Optional[Callable[[Table], Table]] = None,
+              transformation_df: Optional[Callable[[DataFrame], DataFrame]] = None):
     """
     Loads a single parquet or multiple parquets as testing data. Returns a tuple of (data, labels) where
     label 0 identifies benign records, label 1 identifies malign records.
@@ -78,8 +87,10 @@ def make_test(test_parquets: str | List[str],
                       list. If test_parquets is a single string, this may also be a single 0/1 literal.
     :param sample: If lower than 1.0, the resulting dataset will be randomly sampled, keeping a fraction of results
                    corresponding to this argument.
-    :param transformation: A function that takes a dataframe and returns a dataframe; called on the dataset before
-                           labelling. If class_map is a list, this must not drop any rows.
+    :param transformation_table: A function that takes an arrow Table and returns a Table; called on each dataset before
+                                 merging and converting to dataframe.
+    :param transformation_df: A function that takes a dataframe and returns a dataframe; called on the merged dataset
+                              before labelling. If class_map is a list, this must not drop any rows.
     """
     if isinstance(test_parquets, str):
         test_parquets = [test_parquets]
@@ -101,6 +112,9 @@ def make_test(test_parquets: str | List[str],
             exit(1)
 
         data = pq.read_table(fn)
+        if transformation_table is not None:
+            data = transformation_table(data)
+
         print(f"Loaded {parquet} for test ({len(data)} entries)")
         if first_table is None:
             first_table = data
@@ -111,8 +125,8 @@ def make_test(test_parquets: str | List[str],
 
     df = pa.concat_tables(tables=tables).to_pandas(self_destruct=True, split_blocks=True)
 
-    if transformation is not None:
-        df = transformation(df)
+    if transformation_df is not None:
+        df = transformation_df(df)
 
     if isinstance(class_map, dict):
         labels = df['label'].apply(lambda x: class_map[x])
@@ -149,5 +163,9 @@ def load_stored_test_data(test_parquet: str):
     return data, y_test
 
 
-def basic_preprocessor(df: DataFrame):
-    return cast_timestamp(drop_nontrain(df))
+def basic_preprocessor_table(table: Table):
+    return drop_nontrain(table)
+
+
+def basic_preprocessor_df(df: DataFrame):
+    return cast_timestamp(df)
