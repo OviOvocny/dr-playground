@@ -34,7 +34,8 @@ def make_split(in_table: Table, a_frac: float = 0.7, pre_sample: float = 1.0,
 
 
 def make_stratified_split(in_tables: List[Table], a_frac: float = 0.7, pre_sample: float | List[float] = 1.0,
-                          random_state: int = 42, stratify_by_column: Optional[str] = None):
+                          random_state: int = 42, stratify_by_column: Optional[str] = None,
+                          stratify_classmap: Optional[dict] = None):
     """
     Merges a list of PyArrow Tables and performs a stratified split. The ratio of items that will be placed in the
     first output set is controlled by a_frac. Returns a tuple of (A, y, B, z) where A, B are the two resulting datasets
@@ -48,6 +49,8 @@ def make_stratified_split(in_tables: List[Table], a_frac: float = 0.7, pre_sampl
     :param stratify_by_column: If not None, stratification will be done based on the specified column. Otherwise, each
     input table will be considered a single class; the y, z output Series will contain the index of source table for
     each record.
+    :param stratify_classmap: If stratify_by_column is used and this is not None, the stratification labels will be
+    first mapped using this map.
     :return: A tuple in a shape of (DataFrame, Series, DataFrame, Series).
     """
     dfs = []
@@ -65,12 +68,15 @@ def make_stratified_split(in_tables: List[Table], a_frac: float = 0.7, pre_sampl
 
     df = pd.concat(dfs, ignore_index=True, sort=False, copy=False)
     if stratify_by_column is not None:
-        y = df["label"]
+        if stratify_classmap is not None:
+            y = df["label"].apply(lambda x: stratify_classmap[x])
+        else:
+            y = df["label"]
         df.drop(columns=["label"], inplace=True)
     else:
         y = pd.concat([Series(i, range(i_len)) for i, i_len in lens])
 
-    x_a, y_a, x_b, y_b = train_test_split(df, y, train_size=a_frac, random_state=random_state,
+    x_a, x_b, y_a, y_b = train_test_split(df, y, train_size=a_frac, random_state=random_state,
                                           shuffle=True, stratify=y)
 
     return x_a, y_a, x_b, y_b
