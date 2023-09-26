@@ -4,7 +4,7 @@ import numpy as np
 from pandas import DataFrame, Series
 from ._helpers import get_normalized_entropy
 from .lexical import count_subdomains
-import schema
+from ..schema import schema
 
 
 def dns(df: DataFrame) -> DataFrame:

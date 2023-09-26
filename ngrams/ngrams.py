@@ -106,8 +106,3 @@ class NgramsAnalyzer:
 
         # Save frequency distributions to a single JSON file
         self.save_to_json(bigram_dict, trigram_dict, 'ngram_freq.json')
-
-
-if __name__ == '__main__':
-    analyzer = NgramsAnalyzer('floor/phishing.parquet')
-    analyzer.analyze_ngrams(20)

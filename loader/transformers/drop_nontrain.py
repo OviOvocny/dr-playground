@@ -1,9 +1,9 @@
 from pandas import DataFrame
 
-import schema
+from .. import schema
 
 nontraining_fields = [
-    "domain_name",
+    # "domain_name",
     "dns_evaluated_on",
     "rdap_evaluated_on",
     "tls_evaluated_on",
@@ -28,8 +28,8 @@ nontraining_fields = [
     "rdap_dnssec",
     "rdap_entities"
 
-    #"tls_root_cert_validity_remaining",
-    #"tls_leaf_cert_validity_remaining"
+    # "tls_root_cert_validity_remaining",
+    # "tls_leaf_cert_validity_remaining"
 ]
 
 

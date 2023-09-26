@@ -1,5 +1,5 @@
 from pymongoarrow.api import Schema
-from pyarrow import list_, string, int64, float64, bool_, struct, dictionary, timestamp
+from pyarrow import list_, string, int64, float64, bool_, struct, timestamp
 
 # Welcome to the schema file. This is where you define the schema of
 # the data you're loading from MongoDB. This is needed because the

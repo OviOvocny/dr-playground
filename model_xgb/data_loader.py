@@ -6,8 +6,8 @@ import pyarrow.parquet as pq
 from pandas import DataFrame, Series
 from pyarrow import Table
 from sklearn.model_selection import train_test_split
-from transformers.drop_nontrain import drop_nontrain_table as drop_nontrain
-from transformers.cast_timestamp import cast_timestamp
+from loader.transformers.drop_nontrain import drop_nontrain_table as drop_nontrain
+from loader.transformers.cast_timestamp import cast_timestamp
 import os.path
 
 
