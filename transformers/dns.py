@@ -53,8 +53,11 @@ def dns(df: DataFrame) -> DataFrame:
 
     # MX features
     df["dns_domain_name_in_mx"] = df[["domain_name", "dns_MX"]].apply(
-        lambda row: None if row["dns_MX"] is None else (row["domain_name"] in row["dns_MX"]), axis=1).astype(bool)
+        lambda row: None if row["dns_MX"] is None else (row["domain_name"] in [x['name'] for x in row['dns_MX']]), axis=1).astype(bool)
     df["dns_mx_mean_len"], df["dns_mx_mean_entropy"] = zip(*df["dns_MX"].apply(make_mx_features))
+
+
+
 
     # TXT features
     df["dns_txt_mean_entropy"], df["dns_txt_external_verification_score"] = zip(*df["dns_TXT"].apply(make_txt_features))
@@ -177,8 +180,8 @@ def make_mx_features(mx: Optional[List[str]]):
     total = len(mx)
 
     for mailserver in mx:
-        mx_len_sum += len(mailserver)
-        mx_entropy_sum += get_normalized_entropy(mailserver)
+        mx_len_sum += len(mailserver['name'])
+        mx_entropy_sum += get_normalized_entropy(mailserver['name'])
 
     return mx_len_sum / total, mx_entropy_sum / total
 
