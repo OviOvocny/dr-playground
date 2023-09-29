@@ -11,7 +11,7 @@ def dns(df: DataFrame) -> DataFrame:
     df = add_dns_record_counts(df)
 
     # Domain name level
-    df["dns_dn_level"] = df["domain_name"].apply(lambda dn: count_subdomains(dn))
+    #NOTUSED# df["dns_dn_level"] = df["domain_name"].apply(lambda dn: count_subdomains(dn))
 
     # Zone DN info
     df["dns_zone"].fillna('', inplace=True)
