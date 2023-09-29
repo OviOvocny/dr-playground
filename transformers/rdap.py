@@ -61,7 +61,7 @@ def get_rdap_domain_features(rdap_entities):
                 administrative_name_len = len(rdap_entities["administrative"][0]["name"])
                 administrative_name_hash = hash_text(rdap_entities["administrative"][0]["name"])
             if "email" in rdap_entities["administrative"][0] and rdap_entities["administrative"][0]["email"] is not None:
-                administrative_email_hash = len(rdap_entities["administrative"][0]["email"])  
+                administrative_email_len = len(rdap_entities["administrative"][0]["email"])  
                 administrative_email_hash = hash_text(rdap_entities["administrative"][0]["email"])    
     
     return registrant_name_len, registrant_name_hash, registrar_name_len, registrar_name_hash, administrative_name_len, administrative_name_hash, \

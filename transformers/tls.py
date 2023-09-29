@@ -86,7 +86,7 @@ def analyze_tls(item: dict, collection_date: datetime.datetime) -> dict:
             "tls_joint_isoitu_policy_crt_count": 0,         # Number of certificates supporting Joint ISO-ITU-T policy (OID root is 2)
             "tls_iso_policy_oid": 0,                        # OID of ISO policy (if any or 0)
             "tls_isoitu_policy_oid": 0,                     # OID of ISOITU policy (if any or 0)
-            "tls_unknown_policy_crt_count": 0,              # How many cerificates uses unknown (not X509v3, not version 1, not version 2) policy
+            #NOTUSED# "tls_unknown_policy_crt_count": 0,    # How many cerificates uses unknown (not X509v3, not version 1, not version 2) policy
             "tls_subject_count": None,                      # How many subjects can be found in SAN extension (can be linked to phishing)       
             "tls_server_auth_crt_count": None,              # How many certificates are used for server authentication (can be simultanously used for client authentication)      
             "tls_client_auth_crt_count": None,              # How many certificates are used for client authentication
@@ -297,7 +297,7 @@ def analyze_tls(item: dict, collection_date: datetime.datetime) -> dict:
         "tls_joint_isoitu_policy_crt_count": isoitu_policy_used_cnt, # Number of certificates supporting Joint ISO-ITU-T policy (OID root is 2)
         "tls_iso_policy_oid": encodePolicy(iso_policy_oid),          # OID of ISO policy (if any or 0)
         "tls_isoitu_policy_oid": encodePolicy(isoitu_policy_oid),    # OID of ISOITU policy (if any or 0)
-        "tls_unknown_policy_crt_count": unknown_policy_cnt,          # How many cerificates uses unknown (not X509v3, not version 1, not version 2) policy
+        #NOTUSED# "tls_unknown_policy_crt_count": unknown_policy_cnt,# How many cerificates uses unknown (not X509v3, not version 1, not version 2) policy
         "tls_subject_count": subject_count,                          # How many subjects can be found in SAN extension (can be linked to phishing)       
         "tls_server_auth_crt_count": server_auth,                    # How many certificates are used for server authentication (can be simultanously used for client authentication)      
         "tls_client_auth_crt_count": client_auth,                    # How many certificates are used for client authentication

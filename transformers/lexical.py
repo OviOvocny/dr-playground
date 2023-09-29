@@ -248,6 +248,8 @@ def lex(df: DataFrame) -> DataFrame:
 
     df['lex_tld_len'] = df['tmp_tld'].apply(len)  # Length of TLD
     df['lex_sld_len'] = df['tmp_sld'].apply(len)  # Length of SLD
+    df['lex_sld_norm_entropy'] = df['tmp_sld'].apply(
+        get_normalized_entropy)  # Normalized entropy od the SLD only
     df['lex_sub_count'] = df['domain_name'].apply(lambda x: count_subdomains(x))  # Number of subdomains (without www)
     df['lex_stld_unique_char_count'] = df['tmp_stld'].apply(
         lambda x: len(set(x.replace(".", ""))))  # Number of unique characters in TLD and SLD

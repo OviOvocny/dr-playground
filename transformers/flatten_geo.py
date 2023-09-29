@@ -10,6 +10,13 @@ def map_ip_data(ip_data):
         return [ip['geo']['country'] for ip in ip_data], [ip['geo']['latitude'] for ip in ip_data], [
             ip['geo']['longitude'] for ip in ip_data]
 
+def map_experimental_ip_data(ip_data):
+    if ip_data is None:
+        return None, None, None
+    else:
+        ip_data = [ip for ip in ip_data if ip['geo'] is not None]
+        return [ip['geo']['isp'] for ip in ip_data], [ip['geo']['org'] for ip in ip_data], [
+            ip['geo']['region'] for ip in ip_data]
 
 # This is just a function that takes nested fields and surfaces them
 # into their own columns. Sounds simple, but it's not. The fields
@@ -27,5 +34,8 @@ def flatten_geo(df: DataFrame) -> DataFrame:
     """
     # flatten ip_data
     df["countries"], df["latitudes"], df["longitudes"] = zip(*df["ip_data"].apply(map_ip_data))
+
+    # EXPERIMENTAL: additional ip_data (currently not used)
+    # df["isps"], df["orgs"], df["regions"] = zip(*df["ip_data"].apply(map_experimental_ip_data))
 
     return df

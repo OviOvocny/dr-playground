@@ -102,7 +102,7 @@ def hash_countries(countries):
     country_ids_count = len(country_ids)
 
     for country_name in countries:
-        country_id = 300
+        country_id = 300 # Unknown
         if country_name in country_ids.keys():
             country_id = country_ids[country_name]
         hash += country_id
@@ -139,9 +139,20 @@ def get_stddev(values):
 #NOTUSED#     df['geo_lon_stddev'] = df['longitudes'].apply(get_stddev)
 #NOTUSED#     return df
 
+def add_coord_stddev(df: DataFrame) -> DataFrame:
+    """
+    Calculate standard deviation of coordinates.
+    Input: DF with longitues and latitudes columns
+    Output: DF with lat_stddev and lon_stddev columns added
+    """
+    df['geo_lat_stddev'] = df['latitudes'].apply(get_stddev)
+    df['geo_lon_stddev'] = df['longitudes'].apply(get_stddev)
+    return df
+
 def geo(df: DataFrame) -> DataFrame:
     df = add_countries_count(df)
     #NOTUSED# df = add_coord_stddev(df)
+    df = add_coord_stddev(df)
 
     df["geo_continent_hash"] = df["countries"].apply(hash_continents)
     df["geo_countries_hash"] = df["countries"].apply(hash_countries)
