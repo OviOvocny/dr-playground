@@ -1,10 +1,11 @@
+import os.path
 from typing import Optional, List, Dict
 import json
 import numpy as np
 from pandas import DataFrame, Series
 from ._helpers import get_normalized_entropy
 from .lexical import count_subdomains
-from ..schema import schema
+from loader import schema
 
 
 def dns(df: DataFrame) -> DataFrame:
@@ -64,7 +65,7 @@ def dns(df: DataFrame) -> DataFrame:
         *df["dns_email_extras"].apply(lambda e: (int(e["spf"] or 0), int(e["dkim"] or 0), int(e["dmarc"] or 0))))
 
     # N-grams
-    with open('ngram_freq.json') as f:
+    with open(os.path.join("ngrams", "ngram_freq.json")) as f:
         ngram_freq = json.load(f)
 
     df["dns_bigram_matches"] = df["domain_name"].apply(find_ngram_matches, args=(ngram_freq["bigram_freq"],))

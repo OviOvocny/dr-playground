@@ -1,6 +1,8 @@
 # transform functions for dataframes
 # [DF with projected fields] -> transformer 1 -> transformer 2 -> ... -> [DF for training]
 # executed in order of appearance in this file
+from typing import List, Tuple, Callable, Dict
+from pandas import DataFrame
 
 # transform functions must take a pandas DataFrame as input and return a DataFrame as output
 # IMPORTANT! import them here as transform_<name> so they can be called automatically in loader.py
@@ -27,3 +29,11 @@ from .rdap import rdap as transform_rdap
 
 # drop non-training columns (done before training)
 # from .drop_nontrain import drop_nontrain as transform_drop
+
+_transformations = [transform_label, transform_dns, transform_ip, transform_flatten, transform_tls,
+                    transform_lexical, transform_geo, transform_rdap]
+
+
+def get_transformations() -> Dict[str, Tuple[bool, Callable[[DataFrame], DataFrame]]]:
+    return {x.__name__.removeprefix("transform_").removesuffix("_save"): (x.__name__.endswith("_save"), x)
+            for x in _transformations}

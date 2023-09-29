@@ -20,6 +20,7 @@
 
 import os
 import sys
+from typing import Tuple, Optional
 
 import click
 import pyarrow as pa
@@ -27,6 +28,7 @@ import pyarrow.parquet as pq
 import pymongo
 import pymongo.errors
 from pandas import DataFrame
+from pyarrow import ArrowException
 from pymongoarrow.monkey import patch_all
 from config import Config
 from .projection import query, projection
@@ -38,28 +40,39 @@ patch_all()
 client = pymongo.MongoClient(Config.MONGO_URI)
 db = client[Config.MONGO_DB]
 
+_cache_path = os.path.join("data", "cache")
+_floor_path = os.path.join("data", "floor")
 
-def save_df(df: DataFrame, name: str, prefix: str = ''):
+if not os.path.exists(_cache_path):
+    os.makedirs(_cache_path)
+if not os.path.exists(_floor_path):
+    os.makedirs(_floor_path)
+
+
+def save_df(df: DataFrame, label: str, checkpoint_name: Optional[str] = None):
     """
     Save a pandas dataframe to parquet in the floor directory. 
     If prefix is specified, save to a subdirectory.
     """
     table = pa.Table.from_pandas(df)
-    prefix_path = f'floor/{prefix}' if prefix != '' else 'floor'
-    # create prefix directory if it doesn't exist
-    if not os.path.exists(prefix_path):
-        os.makedirs(prefix_path)
-    print(f'Saving to {prefix_path}/{name}.parquet', file=sys.stderr)
-    pq.write_table(table, f'{prefix_path}/{name}.parquet', coerce_timestamps='ms', allow_truncated_timestamps=True)
+
+    target_dir = _floor_path if checkpoint_name is None else os.path.join(_floor_path, f"after_{checkpoint_name}")
+    if not os.path.exists(target_dir):
+        os.makedirs(target_dir)
+
+    print(f'[{label}] Saving to {target_dir}/{label}.parquet', file=sys.stderr)
+    pq.write_table(table, os.path.join(target_dir, f"{label}.parquet"),
+                   coerce_timestamps='ms', allow_truncated_timestamps=True)
 
 
-def get_df(collection_name: str, cache_mode: str):
+def get_df(label: str, collection_name: str, cache_mode: str):
     """Wrapper for pymongoarrow.find/aggregate_whatever_all because it's typed NoReturn for some godforsaken reason."""
     # determine whether to refresh from mongo
     # TODO: implement auto cache check
     if cache_mode not in ['auto', 'force-refresh', 'force-local']:
         print(f'Invalid cache_mode "{cache_mode}", defaulting to auto!', file=sys.stderr)
         cache_mode = 'auto'
+
     will_refresh = False
     if cache_mode == 'auto':
         print('[NOTE] Auto cache check not yet implemented, defaulting to local data! Use '
@@ -67,56 +80,83 @@ def get_df(collection_name: str, cache_mode: str):
               file=sys.stderr)
     elif cache_mode == 'force-refresh':
         will_refresh = True
+
+    collection_cached_path = os.path.join(_cache_path, f"{collection_name}.parquet")
+
     # load from cache if it exists and we're not refreshing
-    if not will_refresh and os.path.exists(f'cache/{collection_name}.parquet'):
-        print(f'[{collection_name}] Loading from cache', file=sys.stderr)
-        return pq.read_table(f'cache/{collection_name}.parquet').to_pandas(safe=False, self_destruct=True,
-                                                                           split_blocks=True)
+    if not will_refresh and os.path.exists(collection_cached_path):
+        print(f'[{label}] Loading from cache', file=sys.stderr)
+        return pq.read_table(collection_cached_path).to_pandas(safe=False, self_destruct=True,
+                                                               split_blocks=True)
     # otherwise, refresh from mongo
     else:
         if not will_refresh:
-            print(f'[{collection_name}] Cache miss, refreshing anyway...', file=sys.stderr)
-        print(f'[{collection_name}] Running Mongo operations', file=sys.stderr)
+            print(f'[{label}] Cache miss, refreshing anyway...', file=sys.stderr)
+        print(f'[{label}] Running Mongo operations on collection {collection_name}', file=sys.stderr)
         for attempt in range(5):
             try:
                 table = db[collection_name].find_arrow_all(query, schema=schema, projection=projection)
-                print(f"[{collection_name}] Writing to parquet")
-                pq.write_table(table, f'cache/{collection_name}.parquet',
+                print(f"[{label}] Writing to parquet")
+                pq.write_table(table, collection_cached_path,
                                coerce_timestamps='ms',
                                allow_truncated_timestamps=True)
                 return table.to_pandas(safe=False, self_destruct=True, split_blocks=True)
             except pymongo.errors.AutoReconnect:
-                print(f'[{collection_name}] AutoReconnect, retrying for {(attempt + 1)} time', file=sys.stderr)
+                print(f'[{label}] AutoReconnect, retrying for {(attempt + 1)} time', file=sys.stderr)
                 continue
 
 
-def run(cache_mode='auto'):
+def get_df_checkpoint(label: str, checkpoint_name: str) -> DataFrame | None:
+    path = os.path.join(_floor_path, f"after_{checkpoint_name}", f"{label}.parquet")
+    if not os.path.isfile(path):
+        return None
+
+    try:
+        return pq.read_table(path).to_pandas(safe=False, self_destruct=True, split_blocks=True)
+    except ArrowException as e:
+        print(f"Error reading 'after_{checkpoint_name}/{label}.parquet': {str(e)}", file=sys.stderr)
+        return None
+
+
+def run(cache_mode='auto', start_at: str = None, checkpoints: Tuple[str] = ()):
     if len(Config.COLLECTIONS) == 0:
-        print("Nothing to be done (check enabled collections in config)")
+        print("Nothing to be done (check enabled collections in config)", file=sys.stderr)
         return
 
+    transformations = loader.transformers.get_transformations()
+
     for label, collection_name in Config.COLLECTIONS.items():
-        # ==> run aggregation pipeline to get select fields from mongo
-        df = get_df(collection_name, cache_mode)
+        df = None
+        # if 'start_at' is used, transformations must be skipped until the 'start_at' one is reached
+        start_at_found = False
+
+        if start_at is not None:
+            # load from the specified checkpoint
+            df = get_df_checkpoint(label, start_at)
+
+        if df is None:
+            # run aggregation pipeline to get select fields from mongo
+            df = get_df(label, collection_name, cache_mode)
+            start_at_found = True
 
         # if df failed to load, skip this collection
         if df is None:
-            print(f'[{collection_name}] Failed to load data, skipping', file=sys.stderr)
+            print(f'[{label}] Failed to load data, skipping', file=sys.stderr)
             continue
 
-        print(f'[{collection_name}] Processing {label} data', file=sys.stderr)
-        # ==> transform data
-        # iterate over custom functions in transformers module and apply them to the dataframe
-        for name, func in loader.transformers.__dict__.items():
-            if callable(func) and name.startswith('transform_'):
-                clean_name = name.removeprefix("transform_").removesuffix("_save")
-                print(f'[{collection_name}] Running {clean_name} transform', file=sys.stderr)
-                df = func(df)
-                if name.endswith('_save'):
-                    save_df(df, label, prefix=f'after_{clean_name}')
+        # Transform data
+        print(f'[{label}] Processing {label} data (collection {collection_name})', file=sys.stderr)
+        for name, (save, func) in transformations.items():
+            if not start_at_found:
+                if name == start_at:
+                    start_at_found = True
+                continue
 
-        # ==> drop nontraining fields
-        # TODO: probably do this later before training, but save the fields here
+            save = save or (name in checkpoints)
+            print(f'[{label}] Running transformation {name}', file=sys.stderr)
+            df = func(df)
+            if save:
+                save_df(df, label, name)
 
-        # ==> write to parquet
+        # write to parquet
         save_df(df, label)

@@ -11,9 +11,9 @@ class Config:
       # 'cesnet': 'cesnet_2307',
       # 'cesnet2': 'cesnet2',
       # 'benign': 'benign_2307',
-      # 'phishing': 'misp_2307',
+       'phishing': 'misp_2307',
       # 'benign_cesnet_intersect': 'benign_cesnet_intersect_2307'
       # 'benign_cesnet_union': 'benign_cesnet_union_2307',
       # 'benign_cesnet2_intersect': 'benign_cesnet2_intersect',
-      # 'malware': 'malware'
+       'malware': 'malware'
   }
