@@ -26,7 +26,7 @@ def rdap(df: DataFrame) -> DataFrame:
         *df["rdap_entities"].apply(get_rdap_domain_features)
     )
 
-    df["ip_v4_count"], df["ip_v6_count"], df["rdap_ip_first_administrative_name_len"], df["rdap_ip_first_administrative_name_hash"], \
+    df["rdap_ip_v4_count"], df["rdap_ip_v6_count"], df["rdap_ip_first_administrative_name_len"], df["rdap_ip_first_administrative_name_hash"], \
         df["rdap_ip_first_administrative_email_len"], df["rdap_ip_first_administrative_email_hash"], \
         df["rdap_ip_shortest_v4_prefix_len"], df["rdap_ip_longest_v4_prefix_len"], \
         df["rdap_ip_shortest_v6_prefix_len"], df["rdap_ip_longest_v6_prefix_len"] = zip(
