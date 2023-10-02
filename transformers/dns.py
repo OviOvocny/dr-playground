@@ -1,5 +1,4 @@
 from typing import Optional, List, Dict
-import json
 import numpy as np
 from pandas import DataFrame, Series
 from ._helpers import get_normalized_entropy
@@ -28,7 +27,7 @@ def dns(df: DataFrame) -> DataFrame:
     df["dns_dnssec_score"] = df.apply(make_dnssec_score, axis=1)
 
     # TTL features
-    df["dns_ttl_mean"], df["dns_ttl_stdev"], df["dns_ttl_low"], df["dns_ttl_mid"], df["dns_ttl_distinct_count"] = zip(
+    df["dns_ttl_avg"], df["dns_ttl_stdev"], df["dns_ttl_low"], df["dns_ttl_mid"], df["dns_ttl_distinct_count"] = zip(
         *df["dns_ttls"].apply(make_ttl_features))
 
     # SOA features
@@ -60,13 +59,13 @@ def dns(df: DataFrame) -> DataFrame:
     # MX features
     df["dns_domain_name_in_mx"] = df[["domain_name", "dns_MX"]].apply(
         lambda row: None if row["dns_MX"] is None else (row["domain_name"] in [x['name'] for x in row['dns_MX']]), axis=1).astype(bool)
-    df["dns_mx_mean_len"], df["dns_mx_mean_entropy"] = zip(*df["dns_MX"].apply(make_mx_features))
+    df["dns_mx_avg_len"], df["dns_mx_avg_entropy"] = zip(*df["dns_MX"].apply(make_mx_features))
 
 
 
 
     # TXT features
-    df["dns_txt_mean_entropy"], df["dns_txt_external_verification_score"] = zip(*df["dns_TXT"].apply(make_txt_features))
+    df["dns_txt_avg_entropy"], df["dns_txt_external_verification_score"] = zip(*df["dns_TXT"].apply(make_txt_features))
 
     # E-mail/TXT features (flattening)
     df["dns_txt_spf_exists"], df["dns_txt_dkim_exists"], df["dns_txt_dmarc_exists"] = zip(
@@ -182,6 +181,8 @@ def make_txt_features(txt: Optional[List[str]]):
     verifiers = ("google-site-verification=", "ms=", "apple-domain-verification=",
                  "facebook-domain-verification=")
     total_non_empty = 0
+    txt_sum_len = 0
+    txt_avg_len = 0
 
     if txt is None:
         return None, 0
@@ -189,6 +190,9 @@ def make_txt_features(txt: Optional[List[str]]):
     for rec in txt:
         if len(rec) == 0:
             continue
+
+        if rec is not None:
+            txt_sum_len += len(rec)
 
         total_non_empty += 1
         entropy = get_normalized_entropy(rec)
@@ -203,9 +207,13 @@ def make_txt_features(txt: Optional[List[str]]):
             if verifier in rec:
                 verification_score += 1
 
+    txt_record_count = len(txt)
+    if txt_record_count > 0:
+        txt_avg_len = txt_sum_len / txt_record_count
+
     if txt_entropy_sum > 0:
         txt_entropy_sum = txt_entropy_sum / total_non_empty
     else:
         txt_entropy_sum = None
 
-    return txt_entropy_sum, verification_score
+    return txt_avg_len, txt_entropy_sum, verification_score

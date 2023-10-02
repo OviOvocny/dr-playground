@@ -1,6 +1,6 @@
 import math
+import numpy as np
 from typing import Optional
-
 from pandas import Series
 
 
@@ -8,6 +8,14 @@ from pandas import Series
 # They are not meant to be used directly, but are imported by the transformers.
 # If you feel like you've created a helper function for your transformer 
 # that you think could be useful for others, please extract it to here.
+
+def get_stddev(values):
+    if values is None:
+        return 0.0
+    v = [float(x) for x in values if x is not None]
+    if 0 <= len(v) <= 1:
+        return 0.0
+    return float(np.std(v))
 
 def mean_of_existing_values(values):
     """

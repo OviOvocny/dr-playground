@@ -1,5 +1,6 @@
 from pandas import DataFrame
 import numpy as np
+from ._helpers import get_stddev
 
 continents = {
     'North America': ['Canada', 'United States', 'Mexico', 'Bermuda'],
@@ -121,13 +122,7 @@ def add_countries_count(df: DataFrame) -> DataFrame:
     df['geo_countries_count'] = df['countries'].apply(lambda countries: len(list(set(countries))) if countries is not None else 0)
     return df
 
-def get_stddev(values):
-    if values is None:
-        return 0.0
-    v = [float(x) for x in values if x is not None]
-    if 0 <= len(v) <= 1:
-        return 0.0
-    return float(np.std(v))
+
 
 #NOTUSED# def add_coord_stddev(df: DataFrame) -> DataFrame:
 #NOTUSED#     """
