@@ -44,10 +44,16 @@ def dns(df: DataFrame) -> DataFrame:
         "dns_soa_email_entropy"] = zip(*df["dns_SOA_tmp"].apply(
         lambda soa: make_string_features(soa["resp_mailbox_dname"]) if soa is not None else (None, None, None, None)))
 
-    df["dns_soa_serial"], df["dns_soa_refresh"], df["dns_soa_retry"], df["dns_soa_expire"], df["dns_soa_min_ttl"] = zip(
+    #NOTUSED # There is no 0 time, could be anything
+    #df["dns_soa_serial"], df["dns_soa_refresh"], df["dns_soa_retry"], df["dns_soa_expire"], df["dns_soa_min_ttl"] = zip(
+    #    *df["dns_SOA_tmp"].apply(
+    #        lambda soa: (soa["serial"], soa["refresh"], soa["retry"], soa["expire"], soa["min_ttl"]) if soa else (
+    #            None, None, None, None, None)))
+    
+    df["dns_soa_refresh"], df["dns_soa_retry"], df["dns_soa_expire"], df["dns_soa_min_ttl"] = zip(
         *df["dns_SOA_tmp"].apply(
-            lambda soa: (soa["serial"], soa["refresh"], soa["retry"], soa["expire"], soa["min_ttl"]) if soa else (
-                None, None, None, None, None)))
+            lambda soa: (soa["refresh"], soa["retry"], soa["expire"], soa["min_ttl"]) if soa else (
+                None, None, None, None)))
 
     df.drop(columns=["dns_SOA_tmp"], inplace=True)
 
@@ -65,14 +71,7 @@ def dns(df: DataFrame) -> DataFrame:
     # E-mail/TXT features (flattening)
     df["dns_txt_spf_exists"], df["dns_txt_dkim_exists"], df["dns_txt_dmarc_exists"] = zip(
         *df["dns_email_extras"].apply(lambda e: (int(e["spf"] or 0), int(e["dkim"] or 0), int(e["dmarc"] or 0))))
-
-    # N-grams
-    with open('ngram_freq.json') as f:
-        ngram_freq = json.load(f)
-
-    df["dns_bigram_matches"] = df["domain_name"].apply(find_ngram_matches, args=(ngram_freq["bigram_freq"],))
-    df["dns_trigram_matches"] = df["domain_name"].apply(find_ngram_matches, args=(ngram_freq["trigram_freq"],))
-
+    
     return df
 
 
@@ -91,21 +90,6 @@ def add_dns_record_counts(df: DataFrame) -> DataFrame:  # OK
     df["dns_CNAME_count"] = df["dns_CNAME"].apply(lambda x: 0 if x is None else 1)
 
     return df
-
-
-# OK
-# Calculate ngram matches, find if bigram or trigram of this domain name is present in the ngram list
-def find_ngram_matches(text: str, ngrams: dict) -> int:
-    """
-    Find the number of ngram matches in the text.
-    Input: text string, ngrams dictionary
-    Output: number of matches
-    """
-    matches = 0
-    for ngram in ngrams:
-        if ngram in text:
-            matches += 1
-    return matches
 
 
 # OK

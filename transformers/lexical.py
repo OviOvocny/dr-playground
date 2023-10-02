@@ -219,6 +219,20 @@ def consecutive_chars(domain: str) -> int:
     return max_count
 
 
+# Calculate ngram matches, find if bigram or trigram of this domain name is present in the ngram list
+def find_ngram_matches(text: str, ngrams: dict) -> int:
+    """
+    Find the number of ngram matches in the text.
+    Input: text string, ngrams dictionary
+    Output: number of matches
+    """
+    matches = 0
+    for ngram in ngrams:
+        if ngram in text:
+            matches += 1
+    return matches
+
+
 def lex(df: DataFrame) -> DataFrame:
     """
     Calculate domain lexical features.
@@ -269,6 +283,13 @@ def lex(df: DataFrame) -> DataFrame:
         lambda x: (sum(1 for c in x if not c.isalnum()) / len(x)) if len(x) > 0 else 0)
     df['lex_sub_hex_ratio'] = df['tmp_concat_subdomains'].apply(
         lambda x: (sum(1 for c in x if c in '0123456789ABCDEFabcdef') / len(x)) if len(x) > 0 else 0)
+    
+    # N-grams
+    with open('ngram_freq.json') as f:
+        ngram_freq = json.load(f)
+
+    df["lex_bigram_matches"] = df["domain_name"].apply(find_ngram_matches, args=(ngram_freq["bigram_freq"],))
+    df["lex_trigram_matches"] = df["domain_name"].apply(find_ngram_matches, args=(ngram_freq["trigram_freq"],))
 
     # Drop temporary columns
     df.drop(columns=['tmp_tld', 'tmp_sld', 'tmp_stld', 'tmp_concat_subdomains'], inplace=True)
