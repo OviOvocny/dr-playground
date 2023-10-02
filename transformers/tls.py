@@ -287,8 +287,8 @@ def analyze_tls(item: dict, collection_date: datetime.datetime) -> dict:
         "tls_x509_anypolicy_crt_count": X_509_used_cnt,              # Number of certificates enforcing X509 - ANY policy
         "tls_iso_policy_crt_count": iso_policy_used_cnt,             # Number of certificates supporting Joint ISO-ITU-T policy (OID root is 1)
         "tls_joint_isoitu_policy_crt_count": isoitu_policy_used_cnt, # Number of certificates supporting Joint ISO-ITU-T policy (OID root is 2)
-        "tls_iso_policy_oid": encodePolicy(iso_policy_oid),          # OID of ISO policy (if any or 0)
-        "tls_isoitu_policy_oid": encodePolicy(isoitu_policy_oid),    # OID of ISOITU policy (if any or 0)
+        #NOTUSED# "tls_iso_policy_oid": encodePolicy(iso_policy_oid),          # OID of ISO policy (if any or 0)
+        #NOTUSED# "tls_isoitu_policy_oid": encodePolicy(isoitu_policy_oid),    # OID of ISOITU policy (if any or 0)
         #NOTUSED# "tls_unknown_policy_crt_count": unknown_policy_cnt,# How many cerificates uses unknown (not X509v3, not version 1, not version 2) policy
         "tls_subject_count": subject_count,                          # How many subjects can be found in SAN extension (can be linked to phishing)       
         "tls_server_auth_crt_count": server_auth,                    # How many certificates are used for server authentication (can be simultanously used for client authentication)      

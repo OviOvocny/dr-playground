@@ -140,8 +140,8 @@ def add_coord_stddev(df: DataFrame) -> DataFrame:
     Input: DF with longitues and latitudes columns
     Output: DF with lat_stddev and lon_stddev columns added
     """
-    df['geo_lat_stddev'] = df['latitudes'].apply(get_stddev)
-    df['geo_lon_stddev'] = df['longitudes'].apply(get_stddev)
+    df['geo_lat_stdev'] = df['latitudes'].apply(get_stddev)
+    df['geo_lon_stdev'] = df['longitudes'].apply(get_stddev)
     return df
 
 def geo(df: DataFrame) -> DataFrame:

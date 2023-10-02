@@ -256,7 +256,7 @@ def lex(df: DataFrame) -> DataFrame:
     df['lex_name_len'] = df['domain_name'].apply(len)
     # NOTUSED# df['lex_dots_count'] = df['domain_name'].apply(lambda x: x.count('.'))   # (with www and TLD) :-> lex_sub_count used instead
     # NOTUSED# df['lex_subdomain_len'] = df['domain_name'].apply(lambda x: sum([len(y) for y in x.split('.')]))  # without dots
-    df['lex_digit_count'] = df['domain_name'].apply(lambda x: sum([1 for y in x if y.isdigit()]))
+    # NOTUSED# df['lex_digit_count'] = df['domain_name'].apply(lambda x: sum([1 for y in x if y.isdigit()]))
     df['lex_has_digit'] = df['domain_name'].apply(lambda x: 1 if sum([1 for y in x if y.isdigit()]) > 0 else 0)
     df['lex_phishing_keyword_count'] = df['domain_name'].apply(lambda x: sum(1 for w in phishing_keywords if w in x))
     # NOTUSED# df['lex_vowel_count'] = df['domain_name'].apply(lambda x: vowel_count(x))
@@ -286,7 +286,8 @@ def lex(df: DataFrame) -> DataFrame:
         get_normalized_entropy)  # Normalized entropy od the domain name (without TLD)
     df['lex_sub_digit_count'] = df['tmp_concat_subdomains'].apply(
         lambda x: (sum([1 for y in x if y.isdigit()])) if len(x) > 0 else 0).astype("float")
-    df['lex_sub_digit_ratio'] = df['lex_sub_digit_count'] / df['lex_name_len']  # Digit ratio in subdomains
+    df['lex_sub_digit_ratio'] = df['tmp_concat_subdomains'].apply(
+        lambda x: (sum([1 for y in x if y.isdigit()]) / len(x)) if len(x) > 0 else 0)  # Digit ratio in subdomains    
     df['lex_sub_vowel_count'] = df['tmp_concat_subdomains'].apply(lambda x: vowel_count(x))
     df['lex_sub_vowel_ratio'] = df['tmp_concat_subdomains'].apply(lambda x: (vowel_count(x) / len(x)) if len(x) > 0 else 0)
     df['lex_sub_consonant_count'] = df['tmp_concat_subdomains'].apply(
