@@ -1,4 +1,5 @@
 from pandas import DataFrame
+from pyarrow import Table
 
 import schema
 
@@ -34,16 +35,18 @@ nontraining_fields = [
 ]
 
 
-def drop_nontrain_table(table):
+def drop_nontrain_table(table: Table):
     """
     Drop non-training columns.
     """
-    return table.drop(nontraining_fields)
+    fields = [x for x in nontraining_fields if x in table.column_names]
+    return table.drop(fields)
 
 
 def drop_nontrain_df(df: DataFrame) -> DataFrame:
     """
     Drop non-training columns.
     """
-    df.drop(columns=nontraining_fields, inplace=True)
+    fields = [x for x in nontraining_fields if x in df.columns]
+    df.drop(columns=fields, inplace=True)
     return df
