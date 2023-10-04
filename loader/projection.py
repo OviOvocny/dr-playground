@@ -40,6 +40,7 @@ projection = {
     "dns_ttls": "$dns.ttls",
     "dns_zone": "$dns.remarks.zone",
     "dns_has_dnskey": "$dns.remarks.has_dnskey",
+    "dns_zone_dnskey_selfsign_ok": "$dns.remarks.zone_dnskey_selfsign_ok",
     **{f"dns_{dns_type}": f"$dns.{dns_type}" for dns_type in ['A', 'AAAA', 'SOA', 'zone_SOA', 'MX', 'TXT']},
     "dns_CNAME": "$dns.CNAME.value",
     "dns_NS": {"$map": {

@@ -136,6 +136,7 @@ schema = Schema({
     "dns_ttls": dns_types_ints,
     "dns_zone": string(),
     "dns_has_dnskey": bool_(),
+    "dns_zone_dnskey_selfsign_ok": bool_(),
     **{f"dns_{dns_type}": list_(string()) for dns_type in ('A', 'AAAA', 'NS', 'TXT')},
     "dns_CNAME": string(),
     "dns_SOA": dns_soa,
