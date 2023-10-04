@@ -16,6 +16,7 @@ nontraining_fields = [
 
     # DNS
     "dns_dnssec",
+    "dns_zone_dnskey_selfsign_ok",
     "dns_email_extras",
     "dns_ttls",
     "dns_zone",

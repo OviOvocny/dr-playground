@@ -23,7 +23,7 @@ def dns(df: DataFrame) -> DataFrame:
     df["dns_resolved_record_types"] = df.apply(count_resolved_record_types, axis=1)
 
     # DNSSEC features
-    df["dns_has_dnskey"] = df["dns_has_dnskey"].replace({True: 1, False: 0, None: 0})
+    df["dns_has_dnskey"].replace({True: 1, False: 0, None: 0, np.nan: 0}, inplace=True)
     df["dns_dnssec_score"] = df.apply(make_dnssec_score, axis=1)
 
     # TTL features
@@ -93,30 +93,30 @@ def add_dns_record_counts(df: DataFrame) -> DataFrame:  # OK
 
 # OK
 def make_dnssec_score(row: Series) -> Optional[float]:
+    has_dnskey = row["dns_has_dnskey"]
+    if has_dnskey == 0:
+        return 0.0
+
+    zone_ok = row["dns_zone_dnskey_selfsign_ok"] or False
+    if not zone_ok:
+        return -2.0
+
     dnssec = row["dns_dnssec"]
     if dnssec is None:
         return 0.0
 
     # only consider record types that have been resolved for the dn
     values = [v for (k, v) in dnssec.items() if (row[f"dns_{k}_count"] or 0) > 0]
-    score = 0.0
 
     if len(values) == 0:
         return 0.0
 
-    if 1 in values:
-        # at least one valid signature
-        # 0 -> -1, 2 -> -2
-        for v in values:
-            if v == 1:
-                score += 1.0
-            elif v == 0:
-                score -= 1.0
-            elif v == 2:
-                score -= 2.0
-    else:
-        # no valid signature, score will be -1
-        score = -len(values)
+    score = 0.0
+    for v in values:
+        if v == 1:  # 1 = VALID_SELF_SIG
+            score += 1.0
+        else:  # anything else is suspicious
+            score -= 2.0
 
     return score / len(values)
 
