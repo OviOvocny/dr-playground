@@ -204,7 +204,7 @@ def analyze_tls(item: dict, collection_date: datetime.datetime) -> dict:
                 critical_extensions += 1
                 
                 
-            if extension['name'] == "subjectAltName":
+            if extension['name'] == "subjectAltName" and extension['value'] is not None:
                 subject_count = len(extension['value'].split(","))
 
                 # count SLDs
@@ -217,7 +217,7 @@ def analyze_tls(item: dict, collection_date: datetime.datetime) -> dict:
                 SLD_cnt = len(unique_SLDs)
             
                             
-            if extension["name"] == "extendedKeyUsage":
+            if extension["name"] == "extendedKeyUsage" and extension["value"] is not None:
                 # apend extension [value] to file issuers.txt
                 auth_type = extension["value"].split(", ")
                 
@@ -227,7 +227,7 @@ def analyze_tls(item: dict, collection_date: datetime.datetime) -> dict:
                     if auth == "TLS Web Client Authentication":
                         client_auth += 1    
                         
-            if extension["name"] == "certificatePolicies":
+            if extension["name"] == "certificatePolicies" and extension["value"] is not None:
                 any_policy_cnt += 1
                 data = extension["value"].split(",")
                 
