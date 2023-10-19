@@ -1,11 +1,12 @@
 from typing import Optional
 from pandas import DataFrame
+import json
 
 import numpy as np
 
 import math
 import tldextract
-from ._helpers import get_normalized_entropy
+from ._helpers import get_normalized_entropy, get_stddev
 
 phishing_keywords = {
     "account", "action", "alert", "app", "auth", "bank", "billing", "center", "chat", "device", "fax", "event",
@@ -219,6 +220,29 @@ def consecutive_chars(domain: str) -> int:
     return max_count
 
 
+# Calculate ngram matches, find if bigram or trigram of this domain name is present in the ngram list
+def find_ngram_matches(text: str, ngrams: dict) -> int:
+    """
+    Find the number of ngram matches in the text.
+    Input: text string, ngrams dictionary
+    Output: number of matches
+    """
+    matches = 0
+    for ngram in ngrams:
+        if ngram in text:
+            matches += 1
+    return matches
+
+# Returns an array od domain parts lengths
+def get_lengths_of_parts(dn: str):
+    # Split the domain string into parts divided by dots
+    domain_parts = dn.split('.')
+
+    # Get the length of each part and store in a list
+    part_lens = [len(part) for part in domain_parts]
+    return part_lens
+
+
 def lex(df: DataFrame) -> DataFrame:
     """
     Calculate domain lexical features.
@@ -232,11 +256,11 @@ def lex(df: DataFrame) -> DataFrame:
     df['lex_name_len'] = df['domain_name'].apply(len)
     # NOTUSED# df['lex_dots_count'] = df['domain_name'].apply(lambda x: x.count('.'))   # (with www and TLD) :-> lex_sub_count used instead
     # NOTUSED# df['lex_subdomain_len'] = df['domain_name'].apply(lambda x: sum([len(y) for y in x.split('.')]))  # without dots
-    df['lex_digit_count'] = df['domain_name'].apply(lambda x: sum([1 for y in x if y.isdigit()]))
+    # NOTUSED# df['lex_digit_count'] = df['domain_name'].apply(lambda x: sum([1 for y in x if y.isdigit()]))
     df['lex_has_digit'] = df['domain_name'].apply(lambda x: 1 if sum([1 for y in x if y.isdigit()]) > 0 else 0)
     df['lex_phishing_keyword_count'] = df['domain_name'].apply(lambda x: sum(1 for w in phishing_keywords if w in x))
-    df['lex_vowel_count'] = df['domain_name'].apply(lambda x: vowel_count(x))
-    df['lex_underscore_hyphen_count'] = df['domain_name'].apply(lambda x: total_underscores_and_hyphens(x))
+    # NOTUSED# df['lex_vowel_count'] = df['domain_name'].apply(lambda x: vowel_count(x))
+    # NOTUSED# df['lex_underscore_hyphen_count'] = df['domain_name'].apply(lambda x: total_underscores_and_hyphens(x))
     df['lex_consecutive_chars'] = df['domain_name'].apply(lambda x: consecutive_chars(x))
     # NOTUSED# df['lex_norm_entropy'] = df['domain_name'].apply(get_normalized_entropy)              # Normalized entropy od the domain name
 
@@ -248,6 +272,8 @@ def lex(df: DataFrame) -> DataFrame:
 
     df['lex_tld_len'] = df['tmp_tld'].apply(len)  # Length of TLD
     df['lex_sld_len'] = df['tmp_sld'].apply(len)  # Length of SLD
+    df['lex_sld_norm_entropy'] = df['tmp_sld'].apply(
+        get_normalized_entropy)  # Normalized entropy od the SLD only
     df['lex_sub_count'] = df['domain_name'].apply(lambda x: count_subdomains(x))  # Number of subdomains (without www)
     df['lex_stld_unique_char_count'] = df['tmp_stld'].apply(
         lambda x: len(set(x.replace(".", ""))))  # Number of unique characters in TLD and SLD
@@ -260,13 +286,34 @@ def lex(df: DataFrame) -> DataFrame:
         get_normalized_entropy)  # Normalized entropy od the domain name (without TLD)
     df['lex_sub_digit_count'] = df['tmp_concat_subdomains'].apply(
         lambda x: (sum([1 for y in x if y.isdigit()])) if len(x) > 0 else 0).astype("float")
-    df['lex_sub_digit_ratio'] = df['lex_sub_digit_count'] / df['lex_name_len']  # Digit ratio in subdomains
+    df['lex_sub_digit_ratio'] = df['tmp_concat_subdomains'].apply(
+        lambda x: (sum([1 for y in x if y.isdigit()]) / len(x)) if len(x) > 0 else 0)  # Digit ratio in subdomains    
+    df['lex_sub_vowel_count'] = df['tmp_concat_subdomains'].apply(lambda x: vowel_count(x))
+    df['lex_sub_vowel_ratio'] = df['tmp_concat_subdomains'].apply(lambda x: (vowel_count(x) / len(x)) if len(x) > 0 else 0)
+    df['lex_sub_consonant_count'] = df['tmp_concat_subdomains'].apply(
+        lambda x: (sum(1 for c in x if c in 'bcdfghjklmnpqrstvwxyz')) if len(x) > 0 else 0)
     df['lex_sub_consonant_ratio'] = df['tmp_concat_subdomains'].apply(
         lambda x: (sum(1 for c in x if c in 'bcdfghjklmnpqrstvwxyz') / len(x)) if len(x) > 0 else 0)
+    df['lex_sub_non_alphanum_count'] = df['tmp_concat_subdomains'].apply(
+        lambda x: (sum(1 for c in x if not c.isalnum())) if len(x) > 0 else 0)
     df['lex_sub_non_alphanum_ratio'] = df['tmp_concat_subdomains'].apply(
         lambda x: (sum(1 for c in x if not c.isalnum()) / len(x)) if len(x) > 0 else 0)
+    df['lex_sub_hex_count'] = df['tmp_concat_subdomains'].apply(
+        lambda x: (sum(1 for c in x if c in '0123456789ABCDEFabcdef')) if len(x) > 0 else 0)
     df['lex_sub_hex_ratio'] = df['tmp_concat_subdomains'].apply(
         lambda x: (sum(1 for c in x if c in '0123456789ABCDEFabcdef') / len(x)) if len(x) > 0 else 0)
+    
+    # N-grams
+    with open('ngram_freq.json') as f:
+        ngram_freq = json.load(f)
+
+    df["lex_bigram_matches"] = df["domain_name"].apply(find_ngram_matches, args=(ngram_freq["bigram_freq"],))
+    df["lex_trigram_matches"] = df["domain_name"].apply(find_ngram_matches, args=(ngram_freq["trigram_freq"],))
+
+    df["lex_avg_part_len"] = df["domain_name"].apply(lambda x: sum(get_lengths_of_parts(x)) / len(get_lengths_of_parts(x)) if len(get_lengths_of_parts(x)) > 0 else 0)
+    df["lex_stdev_part_lens"] = df["domain_name"].apply(lambda x: get_stddev(get_lengths_of_parts(x)) if len(get_lengths_of_parts(x)) > 0 else 0)
+    df["lex_longest_part_len"] = df["domain_name"].apply(lambda x: max(get_lengths_of_parts(x)) if len(get_lengths_of_parts(x)) > 0 else 0)
+    df["lex_shortest_sub_len"] = df["tmp_concat_subdomains"].apply(lambda x: min(get_lengths_of_parts(x)) if len(get_lengths_of_parts(x)) > 0 else 0)
 
     # Drop temporary columns
     df.drop(columns=['tmp_tld', 'tmp_sld', 'tmp_stld', 'tmp_concat_subdomains'], inplace=True)

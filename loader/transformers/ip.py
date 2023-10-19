@@ -82,8 +82,13 @@ def ip(df: DataFrame) -> DataFrame:
         lambda ip_data: mean_of_existing_values(
             [ip['remarks']['average_rtt'] for ip in ip_data]) if ip_data is not None else 0)
 
+    # Ratio of IPv4 addresses (from A records) to all addresses (from A and AAAA records)
+    df["ip_v4_ratio"] = df.apply(
+        lambda row: 0 if (row["dns_A_count"] + row["dns_AAAA_count"]) == 0 else (row["dns_A_count"] / (row["dns_A_count"] + row["dns_AAAA_count"])),
+        axis=1)
+
     # ratio between A/AAAA records count and all related IPs count
-    df["ip_a_ratio"] = df.apply(
+    df["ip_a_aaaa_to_all_ratio"] = df.apply(
         lambda row: 0 if row["ip_count"] == 0 else (row["dns_A_count"] + row["dns_AAAA_count"]) / row["ip_count"],
         axis=1)
 

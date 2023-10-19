@@ -1,6 +1,5 @@
 import os.path
 from typing import Optional, List, Dict
-import json
 import numpy as np
 from pandas import DataFrame, Series
 from ._helpers import get_normalized_entropy
@@ -12,7 +11,7 @@ def dns(df: DataFrame) -> DataFrame:
     df = add_dns_record_counts(df)
 
     # Domain name level
-    df["dns_dn_level"] = df["domain_name"].apply(lambda dn: count_subdomains(dn))
+    # NOTUSED# df["dns_dn_level"] = df["domain_name"].apply(lambda dn: count_subdomains(dn))
 
     # Zone DN info
     df["dns_zone"].fillna('', inplace=True)
@@ -29,7 +28,7 @@ def dns(df: DataFrame) -> DataFrame:
     df["dns_dnssec_score"] = df.apply(make_dnssec_score, axis=1)
 
     # TTL features
-    df["dns_ttl_mean"], df["dns_ttl_stdev"], df["dns_ttl_low"], df["dns_ttl_mid"], df["dns_ttl_distinct_count"] = zip(
+    df["dns_ttl_avg"], df["dns_ttl_stdev"], df["dns_ttl_low"], df["dns_ttl_mid"], df["dns_ttl_distinct_count"] = zip(
         *df["dns_ttls"].apply(make_ttl_features))
 
     # SOA features
@@ -45,31 +44,31 @@ def dns(df: DataFrame) -> DataFrame:
         "dns_soa_email_entropy"] = zip(*df["dns_SOA_tmp"].apply(
         lambda soa: make_string_features(soa["resp_mailbox_dname"]) if soa is not None else (None, None, None, None)))
 
-    df["dns_soa_serial"], df["dns_soa_refresh"], df["dns_soa_retry"], df["dns_soa_expire"], df["dns_soa_min_ttl"] = zip(
+    # NOTUSED # There is no 0 time, could be anything
+    # df["dns_soa_serial"], df["dns_soa_refresh"], df["dns_soa_retry"], df["dns_soa_expire"], df["dns_soa_min_ttl"] = zip(
+    #    *df["dns_SOA_tmp"].apply(
+    #        lambda soa: (soa["serial"], soa["refresh"], soa["retry"], soa["expire"], soa["min_ttl"]) if soa else (
+    #            None, None, None, None, None)))
+
+    df["dns_soa_refresh"], df["dns_soa_retry"], df["dns_soa_expire"], df["dns_soa_min_ttl"] = zip(
         *df["dns_SOA_tmp"].apply(
-            lambda soa: (soa["serial"], soa["refresh"], soa["retry"], soa["expire"], soa["min_ttl"]) if soa else (
-                None, None, None, None, None)))
+            lambda soa: (soa["refresh"], soa["retry"], soa["expire"], soa["min_ttl"]) if soa else (
+                None, None, None, None)))
 
     df.drop(columns=["dns_SOA_tmp"], inplace=True)
 
     # MX features
     df["dns_domain_name_in_mx"] = df[["domain_name", "dns_MX"]].apply(
-        lambda row: None if row["dns_MX"] is None else (row["domain_name"] in row["dns_MX"]), axis=1).astype(bool)
-    df["dns_mx_mean_len"], df["dns_mx_mean_entropy"] = zip(*df["dns_MX"].apply(make_mx_features))
+        lambda row: None if row["dns_MX"] is None else (row["domain_name"] in [x['name'] for x in row['dns_MX']]),
+        axis=1).astype(bool)
+    df["dns_mx_avg_len"], df["dns_mx_avg_entropy"] = zip(*df["dns_MX"].apply(make_mx_features))
 
     # TXT features
-    df["dns_txt_mean_entropy"], df["dns_txt_external_verification_score"] = zip(*df["dns_TXT"].apply(make_txt_features))
+    df["dns_txt_avg_entropy"], df["dns_txt_external_verification_score"] = zip(*df["dns_TXT"].apply(make_txt_features))
 
     # E-mail/TXT features (flattening)
     df["dns_txt_spf_exists"], df["dns_txt_dkim_exists"], df["dns_txt_dmarc_exists"] = zip(
         *df["dns_email_extras"].apply(lambda e: (int(e["spf"] or 0), int(e["dkim"] or 0), int(e["dmarc"] or 0))))
-
-    # N-grams
-    with open(os.path.join("ngrams", "ngram_freq.json")) as f:
-        ngram_freq = json.load(f)
-
-    df["dns_bigram_matches"] = df["domain_name"].apply(find_ngram_matches, args=(ngram_freq["bigram_freq"],))
-    df["dns_trigram_matches"] = df["domain_name"].apply(find_ngram_matches, args=(ngram_freq["trigram_freq"],))
 
     return df
 
@@ -89,21 +88,6 @@ def add_dns_record_counts(df: DataFrame) -> DataFrame:  # OK
     df["dns_CNAME_count"] = df["dns_CNAME"].apply(lambda x: 0 if x is None else 1)
 
     return df
-
-
-# OK
-# Calculate ngram matches, find if bigram or trigram of this domain name is present in the ngram list
-def find_ngram_matches(text: str, ngrams: dict) -> int:
-    """
-    Find the number of ngram matches in the text.
-    Input: text string, ngrams dictionary
-    Output: number of matches
-    """
-    matches = 0
-    for ngram in ngrams:
-        if ngram in text:
-            matches += 1
-    return matches
 
 
 # OK
@@ -178,8 +162,8 @@ def make_mx_features(mx: Optional[List[str]]):
     total = len(mx)
 
     for mailserver in mx:
-        mx_len_sum += len(mailserver)
-        mx_entropy_sum += get_normalized_entropy(mailserver)
+        mx_len_sum += len(mailserver['name'])
+        mx_entropy_sum += get_normalized_entropy(mailserver['name'])
 
     return mx_len_sum / total, mx_entropy_sum / total
 
@@ -196,6 +180,8 @@ def make_txt_features(txt: Optional[List[str]]):
     verifiers = ("google-site-verification=", "ms=", "apple-domain-verification=",
                  "facebook-domain-verification=")
     total_non_empty = 0
+    txt_sum_len = 0
+    txt_avg_len = 0
 
     if txt is None:
         return None, 0
@@ -203,6 +189,9 @@ def make_txt_features(txt: Optional[List[str]]):
     for rec in txt:
         if len(rec) == 0:
             continue
+
+        if rec is not None:
+            txt_sum_len += len(rec)
 
         total_non_empty += 1
         entropy = get_normalized_entropy(rec)
@@ -217,9 +206,13 @@ def make_txt_features(txt: Optional[List[str]]):
             if verifier in rec:
                 verification_score += 1
 
+    txt_record_count = len(txt)
+    if txt_record_count > 0:
+        txt_avg_len = txt_sum_len / txt_record_count
+
     if txt_entropy_sum > 0:
         txt_entropy_sum = txt_entropy_sum / total_non_empty
     else:
         txt_entropy_sum = None
 
-    return txt_entropy_sum, verification_score
+    return txt_avg_len, txt_entropy_sum, verification_score

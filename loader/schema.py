@@ -84,8 +84,16 @@ ip_rdap_data = struct([
 ip_data = struct([
     ("geo", struct([
         ("country", string()),
+        ("country_code", string()),
+        ("region", string()),
+        ("region_code", string()),
+        ("city", string()),
+        ("postal_code", string()),
         ("latitude", float64()),
         ("longitude", float64()),
+        ("timezone", string()),
+        ("isp", string()),
+        ("org", string()),
     ])),
     ("remarks", struct([
         ("average_rtt", float64()),

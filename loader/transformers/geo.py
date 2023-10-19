@@ -1,5 +1,6 @@
 from pandas import DataFrame
 import numpy as np
+from ._helpers import get_stddev
 
 continents = {
     'North America': ['Canada', 'United States', 'Mexico', 'Bermuda'],
@@ -102,7 +103,7 @@ def hash_countries(countries):
     country_ids_count = len(country_ids)
 
     for country_name in countries:
-        country_id = 300
+        country_id = 300 # Unknown
         if country_name in country_ids.keys():
             country_id = country_ids[country_name]
         hash += country_id
@@ -121,13 +122,7 @@ def add_countries_count(df: DataFrame) -> DataFrame:
     df['geo_countries_count'] = df['countries'].apply(lambda countries: len(list(set(countries))) if countries is not None else 0)
     return df
 
-def get_stddev(values):
-    if values is None:
-        return 0.0
-    v = [float(x) for x in values if x is not None]
-    if 0 <= len(v) <= 1:
-        return 0.0
-    return float(np.std(v))
+
 
 #NOTUSED# def add_coord_stddev(df: DataFrame) -> DataFrame:
 #NOTUSED#     """
@@ -139,9 +134,20 @@ def get_stddev(values):
 #NOTUSED#     df['geo_lon_stddev'] = df['longitudes'].apply(get_stddev)
 #NOTUSED#     return df
 
+def add_coord_stddev(df: DataFrame) -> DataFrame:
+    """
+    Calculate standard deviation of coordinates.
+    Input: DF with longitues and latitudes columns
+    Output: DF with lat_stddev and lon_stddev columns added
+    """
+    df['geo_lat_stdev'] = df['latitudes'].apply(get_stddev)
+    df['geo_lon_stdev'] = df['longitudes'].apply(get_stddev)
+    return df
+
 def geo(df: DataFrame) -> DataFrame:
     df = add_countries_count(df)
     #NOTUSED# df = add_coord_stddev(df)
+    df = add_coord_stddev(df)
 
     df["geo_continent_hash"] = df["countries"].apply(hash_continents)
     df["geo_countries_hash"] = df["countries"].apply(hash_countries)
