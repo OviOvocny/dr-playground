@@ -63,7 +63,7 @@ def _project(domain: dict):
         "rdap_registration_date": domain["rdap"]["registration_date"],
         "rdap_expiration_date": domain["rdap"]["expiration_date"],
         "rdap_last_changed_date": domain["rdap"]["last_changed_date"],
-        "rdap_dnssec": domain["rdap"]["dnssec"],
+        "rdap_dnssec": domain["rdap"]["dnssec"] if "dnssec" in domain["rdap"] else None,
         "rdap_entities": domain["rdap"]["entities"],
         #
         "ip_data": [{
