@@ -64,7 +64,8 @@ def dns(df: DataFrame) -> DataFrame:
     df["dns_mx_avg_len"], df["dns_mx_avg_entropy"] = zip(*df["dns_MX"].apply(make_mx_features))
 
     # TXT features
-    df["dns_txt_avg_entropy"], df["dns_txt_external_verification_score"] = zip(*df["dns_TXT"].apply(make_txt_features))
+    df["dns_txt_avg_entropy"], df["dns_txt_avg_entropy"], df["dns_txt_external_verification_score"] = zip(
+        *df["dns_TXT"].apply(make_txt_features))
 
     # E-mail/TXT features (flattening)
     df["dns_txt_spf_exists"], df["dns_txt_dkim_exists"], df["dns_txt_dmarc_exists"] = zip(

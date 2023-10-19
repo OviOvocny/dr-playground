@@ -304,7 +304,7 @@ def lex(df: DataFrame) -> DataFrame:
         lambda x: (sum(1 for c in x if c in '0123456789ABCDEFabcdef') / len(x)) if len(x) > 0 else 0)
     
     # N-grams
-    with open('ngram_freq.json') as f:
+    with open('ngrams/ngram_freq.json') as f:
         ngram_freq = json.load(f)
 
     df["lex_bigram_matches"] = df["domain_name"].apply(find_ngram_matches, args=(ngram_freq["bigram_freq"],))
