@@ -1,7 +1,10 @@
+*.log
+
 .env
 .venv
 floor/*
 cache/**/*.parquet
+data/
 *.parquet
 .ipynb_checkpoints
 *.pickle.dat

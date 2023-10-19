@@ -1,0 +1,3 @@
+[submodule "dr-collector"]
+	path = dr_collector
+	url = git@github.com:OviOvocny/dr-collector.git
