@@ -94,6 +94,7 @@ def analyze_tls(item: dict, collection_date: datetime.datetime) -> dict:
             "tls_CA_certs_in_chain_ratio": None,            # Ration of CA certificates in chain
             "tls_unique_SLD_count": None,                   # Number of unique SLDs in SAN extension
             #NOTUSED# "tls_common_names": None,             # List of common names in certificate chain (CATEGORICAL!)
+            "tls_common_name_count": None,                  # Number of common names in certificate chain
     }
     
         return {"success": False, "features": features}
