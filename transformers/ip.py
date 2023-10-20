@@ -71,7 +71,7 @@ def make_asn_features(ip_data):
     return as_address_entropy, asn_entropy, distinct_as_count
 
 
-def ip(df: DataFrame) -> DataFrame:
+def ip(df: DataFrame) -> DataFrame:   
     df["ip_count"] = df["ip_data"].apply(lambda x: len(x) if x is not None else 0)
     df["ip_mean_average_rtt"] = df["ip_data"].apply(
         lambda ip_data: mean_of_existing_values(

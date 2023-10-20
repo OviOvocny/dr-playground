@@ -25,6 +25,7 @@ from pandas import DataFrame
 import pyarrow as pa
 import pyarrow.parquet as pq
 from pymongoarrow.monkey import patch_all
+from transformers.drop_nontrain import drop_nontrain_df
 patch_all()
 
 from config import Config
@@ -112,8 +113,12 @@ def run(cache_mode = 'auto'):
                 if name.endswith('_save'):
                     save_df(df, label, prefix=f'after_{clean_name}')
 
+        # Save 
+        save_df(df, label, prefix=f'beforedrop_{clean_name}')
+
         #==> drop nontraining fields
         # TODO: probably do this later before training, but save the fields here
+        df = drop_nontrain_df(df)
 
         #==> write to parquet
         save_df(df, label)
