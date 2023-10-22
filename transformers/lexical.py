@@ -274,6 +274,27 @@ def lex(df: DataFrame) -> DataFrame:
     df['lex_sld_len'] = df['tmp_sld'].apply(len)  # Length of SLD
     df['lex_sld_norm_entropy'] = df['tmp_sld'].apply(
         get_normalized_entropy)  # Normalized entropy od the SLD only
+    
+    # new SLD-based features
+    df['lex_sld_phishing_keyword_count'] = df['tmp_sld'].apply(lambda x: sum(1 for w in phishing_keywords if w in x))
+    df['lex_sld_vowel_count'] = df['tmp_sld'].apply(lambda x: vowel_count(x))
+    df['lex_sld_vowel_ratio'] = df['tmp_sld'].apply(lambda x: (vowel_count(x) / len(x)) if len(x) > 0 else 0)
+    df['lex_sld_consonant_count'] = df['tmp_sld'].apply(
+        lambda x: (sum(1 for c in x if c in 'bcdfghjklmnpqrstvwxyz')) if len(x) > 0 else 0)
+    df['lex_sld_consonant_ratio'] = df['tmp_sld'].apply(
+        lambda x: (sum(1 for c in x if c in 'bcdfghjklmnpqrstvwxyz') / len(x)) if len(x) > 0 else 0)
+    df['lex_sld_non_alphanum_count'] = df['tmp_sld'].apply(
+        lambda x: (sum(1 for c in x if not c.isalnum())) if len(x) > 0 else 0)
+    df['lex_sld_non_alphanum_ratio'] = df['tmp_sld'].apply(
+        lambda x: (sum(1 for c in x if not c.isalnum()) / len(x)) if len(x) > 0 else 0)
+    df['lex_sld_hex_count'] = df['tmp_sld'].apply(
+        lambda x: (sum(1 for c in x if c in '0123456789ABCDEFabcdef')) if len(x) > 0 else 0)
+    df['lex_sld_hex_ratio'] = df['tmp_sld'].apply(
+        lambda x: (sum(1 for c in x if c in '0123456789ABCDEFabcdef') / len(x)) if len(x) > 0 else 0)
+    # End of new SLD-based features
+
+    
+    
     df['lex_sub_count'] = df['domain_name'].apply(lambda x: count_subdomains(x))  # Number of subdomains (without www)
     df['lex_stld_unique_char_count'] = df['tmp_stld'].apply(
         lambda x: len(set(x.replace(".", ""))))  # Number of unique characters in TLD and SLD
@@ -310,11 +331,28 @@ def lex(df: DataFrame) -> DataFrame:
     df["lex_bigram_matches"] = df["domain_name"].apply(find_ngram_matches, args=(ngram_freq["bigram_freq"],))
     df["lex_trigram_matches"] = df["domain_name"].apply(find_ngram_matches, args=(ngram_freq["trigram_freq"],))
 
-    df["lex_avg_part_len"] = df["domain_name"].apply(lambda x: sum(get_lengths_of_parts(x)) / len(get_lengths_of_parts(x)) if len(get_lengths_of_parts(x)) > 0 else 0)
-    df["lex_stdev_part_lens"] = df["domain_name"].apply(lambda x: get_stddev(get_lengths_of_parts(x)) if len(get_lengths_of_parts(x)) > 0 else 0)
-    df["lex_longest_part_len"] = df["domain_name"].apply(lambda x: max(get_lengths_of_parts(x)) if len(get_lengths_of_parts(x)) > 0 else 0)
+    df["tmp_part_lengths"] = df["domain_name"].apply(lambda x: get_lengths_of_parts(x))
+
+    #df["lex_avg_part_len"] = df["domain_name"].apply(lambda x: sum(get_lengths_of_parts(x)) / len(get_lengths_of_parts(x)) if len(get_lengths_of_parts(x)) > 0 else 0)
+    #df["lex_stdev_part_lens"] = df["domain_name"].apply(lambda x: get_stddev(get_lengths_of_parts(x)) if len(get_lengths_of_parts(x)) > 0 else 0)
+    #df["lex_longest_part_len"] = df["domain_name"].apply(lambda x: max(get_lengths_of_parts(x)) if len(get_lengths_of_parts(x)) > 0 else 0)
+
+    df["lex_avg_part_len"] = df["tmp_part_lengths"].apply(lambda x: sum(x) / len(x) if len(x) > 0 else 0)
+    df["lex_stdev_part_lens"] = df["tmp_part_lengths"].apply(lambda x: get_stddev(x) if len(x) > 0 else 0)
+    df["lex_longest_part_len"] = df["tmp_part_lengths"].apply(lambda x: max(x) if len(x) > 0 else 0)
+
+    # New part length distribution features
+    df["lex_short_part_count"] = df["tmp_part_lengths"].apply(lambda x: len([pl for pl in x if pl <= 3]) if len(x) > 0 else 0)
+    df["lex_medium_part_count"] = df["tmp_part_lengths"].apply(lambda x: len([pl for pl in x if pl >= 4 and pl <= 10]) if len(x) > 0 else 0)
+    df["lex_long_part_count"] = df["tmp_part_lengths"].apply(lambda x: len([pl for pl in x if pl >= 11 and pl <= 30]) if len(x) > 0 else 0)
+    df["lex_superlong_part_count"] = df["tmp_part_lengths"].apply(lambda x: len([pl for pl in x if pl >= 31]) if len(x) > 0 else 0)
+    # End of New part length distribution features
+
+
     df["lex_shortest_sub_len"] = df["tmp_concat_subdomains"].apply(lambda x: min(get_lengths_of_parts(x)) if len(get_lengths_of_parts(x)) > 0 else 0)
 
+
+
     # Drop temporary columns
-    df.drop(columns=['tmp_tld', 'tmp_sld', 'tmp_stld', 'tmp_concat_subdomains'], inplace=True)
+    df.drop(columns=['tmp_tld', 'tmp_sld', 'tmp_stld', 'tmp_concat_subdomains', 'tmp_part_lengths'], inplace=True)
     return df
