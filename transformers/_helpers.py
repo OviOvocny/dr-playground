@@ -93,7 +93,8 @@ def get_normalized_entropy(text: str) -> Optional[float]:
     """
     text_len = len(text)
     if text_len == 0:
-        return None
+        #return None
+        return 0
 
     freqs = {}
     for char in text:

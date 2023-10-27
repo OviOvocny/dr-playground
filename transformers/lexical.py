@@ -3,6 +3,7 @@ from pandas import DataFrame
 import json
 
 import numpy as np
+import re
 
 import math
 import tldextract
@@ -14,6 +15,97 @@ phishing_keywords = {
     "my", "new", "nitro", "now", "online", "pay", "promo", "real", "required", "safe", "secure", "security",
     "service", "signin", "support", "track", "update", "verification", "verify", "vm", "web"
 }
+
+_trusted_suffixes = ["googlesyndication.com", "office.com", "fbcdn.net", "gstatic.com", "yahoodns.net",
+                     "fbcdn.net", "pinimg.com", "vut.cz", "vutbr.cz", "cvut.cz", "cuni.cz", "muni.cz", "cesnet.cz"]
+
+_well_known_suffixes = [
+    "google.com", "facebook.com", "apple.com", "microsoft.com", "amazon.com",
+    "twitter.com", "instagram.com", "linkedin.com", "adobe.com", "spotify.com",
+    "netflix.com", "youtube.com", "pinterest.com", "whatsapp.com", "tiktok.com",
+    "wikipedia.org", "mozilla.org", "wordpress.org", "bbc.co.uk", "nytimes.com",
+    "reddit.com", "slack.com", "salesforce.com", "shopify.com", "dropbox.com",
+    "samsung.com", "oracle.com", "ibm.com", "cisco.com", "zoom.us",
+    "paypal.com", "mastercard.com", "visa.com", "stripe.com", "americanexpress.com",
+    "tesla.com", "uber.com", "airbnb.com", "tripadvisor.com", "yelp.com",
+    "nasa.gov", "cdc.gov", "who.int", "un.org", "europa.eu",
+    "harvard.edu", "stanford.edu", "mit.edu", "cam.ac.uk", "github.com"
+]
+
+_cdn_suffixes = [
+    "akamaihd.net", "akamai.net", "akamaiedge.net", "akamaitechnologies.com",
+    "cloudfront.net", "edgecastcdn.net", "fastly.net", "stackpathcdn.com",
+    "cachefly.net", "keycdn.com", "cloudflare.net", "maxcdn.com",
+    "cdn77.org", "cdnify.io", "belugacdn.link", "kxcdn.com",
+    "cdnetworks.net", "incapdns.net", "lswcdn.net", "llnw.net",
+    "hwcdn.net", "nyucd.net", "onappcdn.com", "panthercdn.com",
+    "simplecdn.net", "ssl.hwcdn.net", "rncdn1.com", "rlcdn.com",
+    "rlcdn.com", "zenedge.net"
+]
+
+_vps_suffixes = [
+    "digitalocean.com", "linode.com", "vultr.com", "aws.amazon.com", "azure.com",
+    "googleapis.com", "ovh.com", "hetzner.com", "bluehost.com", "hostgator.com",
+    "godaddy.com", "dreamhost.com", "siteground.com", "a2hosting.com", "scaleway.com",
+    "upcloud.com", "ramnode.com", "inmotionhosting.com", "liquidweb.com", "contabo.com",
+    "cloud.google.com", "kamatera.com", "interserver.net", "lunanode.com", "buyvm.net",
+    "time4vps.com", "vpsdime.com", "vpsserver.com", "hostwinds.com", "milesweb.com"
+]
+
+_image_hosting_suffixes = [
+    "imgur.com", "flickr.com", "photobucket.com", "500px.com", "postimage.io", "tinypic.com",
+    "deviantart.com", "imageshack.us", "imgbb.com", "imgsafe.org", "smugmug.com", "imagevenue.com",
+    "imgbox.com", "imgpile.net", "pinterest.com", "pixabay.com", "unsplash.com", "pbase.com",
+    "giphy.com", "gyazo.com", "directupload.net", "funkyimg.com", "imagebam.com", "cubeupload.com",
+    "photo.net", "dropbox.com", "googleusercontent.com", "mediafire.com", "imgflip.com", "ifcdn.com",
+    "img2share.com", "sli.mg", "imagefra.me", "yfrog.com", "cloudinary.com", "imgsrc.ru",
+    "instagram.com", "snapfish.com", "shutterfly.com", "tumblr.com", "reddituploads.com", "vgy.me",
+    "imageupper.com", "postimg.cc", "imgclick.net", "freeimagehosting.net", "imageupload.net",
+    "image-share.com", "pic-upload.de", "imagehosting.com"
+]
+
+def has_trusted_suffix(domain):
+    return any(domain.endswith(suffix) for suffix in _well_known_suffixes)
+
+def has_wellknown_suffix(domain):
+    return any(domain.endswith(suffix) for suffix in _trusted_suffixes)
+
+def has_cdn_suffix(domain):
+    return any(domain.endswith(suffix) for suffix in _cdn_suffixes)
+
+def has_vps_suffix(domain):
+    return any(domain.endswith(suffix) for suffix in _vps_suffixes)
+
+def has_img_suffix(domain):
+    return any(domain.endswith(suffix) for suffix in _image_hosting_suffixes)
+
+
+
+# Compile the regular expressions for both patterns
+_ipv4_standard_format = re.compile(r'(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)')
+_ipv4_dashed_format = re.compile(r'(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)-){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)')
+
+def contains_ipv4(s):
+    # Use search method of compiled regex objects
+    if _ipv4_standard_format.search(s) or _ipv4_dashed_format.search(s):
+        return True
+    return False
+
+_phishing_ngram_freq = dict()
+_malware_ngram_freq = dict()
+_dga_ngram_freq = dict()
+
+# N-grams
+with open('ngram_freq_phishing.json') as f:
+    _phishing_ngram_freq = json.load(f)
+
+# N-grams
+with open('ngram_freq_malware.json') as f:
+    _malware_ngram_freq = json.load(f)
+
+# N-grams
+with open('ngram_freq_dga.json') as f:
+    _dga_ngram_freq = json.load(f)
 
 
 def longest_consonant_seq(domain: str) -> int:
@@ -292,8 +384,6 @@ def lex(df: DataFrame) -> DataFrame:
     df['lex_sld_hex_ratio'] = df['tmp_sld'].apply(
         lambda x: (sum(1 for c in x if c in '0123456789ABCDEFabcdef') / len(x)) if len(x) > 0 else 0)
     # End of new SLD-based features
-
-    
     
     df['lex_sub_count'] = df['domain_name'].apply(lambda x: count_subdomains(x))  # Number of subdomains (without www)
     df['lex_stld_unique_char_count'] = df['tmp_stld'].apply(
@@ -324,34 +414,39 @@ def lex(df: DataFrame) -> DataFrame:
     df['lex_sub_hex_ratio'] = df['tmp_concat_subdomains'].apply(
         lambda x: (sum(1 for c in x if c in '0123456789ABCDEFabcdef') / len(x)) if len(x) > 0 else 0)
     
-    # N-grams
-    with open('ngram_freq.json') as f:
-        ngram_freq = json.load(f)
+    # N-Grams
+    df["lex_phishing_bigram_matches"] = df["tmp_concat_subdomains"].apply(find_ngram_matches, args=(_phishing_ngram_freq["bigram_freq"],))
+    df["lex_phishing_trigram_matches"] = df["tmp_concat_subdomains"].apply(find_ngram_matches, args=(_phishing_ngram_freq["trigram_freq"],))
+    df["lex_phishing_tetragram_matches"] = df["tmp_concat_subdomains"].apply(find_ngram_matches, args=(_phishing_ngram_freq["tetragram_freq"],))
+    df["lex_malware_bigram_matches"] = df["tmp_concat_subdomains"].apply(find_ngram_matches, args=(_malware_ngram_freq["bigram_freq"],))
+    df["lex_malware_trigram_matches"] = df["tmp_concat_subdomains"].apply(find_ngram_matches, args=(_malware_ngram_freq["trigram_freq"],))
+    df["lex_malware_tetragram_matches"] = df["tmp_concat_subdomains"].apply(find_ngram_matches, args=(_malware_ngram_freq["tetragram_freq"],))
+    df["lex_dga_bigram_matches"] = df["tmp_concat_subdomains"].apply(find_ngram_matches, args=(_dga_ngram_freq["bigram_freq"],))
+    df["lex_dga_trigram_matches"] = df["tmp_concat_subdomains"].apply(find_ngram_matches, args=(_dga_ngram_freq["trigram_freq"],))
+    df["lex_dga_tetragram_matches"] = df["tmp_concat_subdomains"].apply(find_ngram_matches, args=(_dga_ngram_freq["tetragram_freq"],))
 
-    df["lex_bigram_matches"] = df["domain_name"].apply(find_ngram_matches, args=(ngram_freq["bigram_freq"],))
-    df["lex_trigram_matches"] = df["domain_name"].apply(find_ngram_matches, args=(ngram_freq["trigram_freq"],))
-
+    # Part lengths
     df["tmp_part_lengths"] = df["domain_name"].apply(lambda x: get_lengths_of_parts(x))
-
-    #df["lex_avg_part_len"] = df["domain_name"].apply(lambda x: sum(get_lengths_of_parts(x)) / len(get_lengths_of_parts(x)) if len(get_lengths_of_parts(x)) > 0 else 0)
-    #df["lex_stdev_part_lens"] = df["domain_name"].apply(lambda x: get_stddev(get_lengths_of_parts(x)) if len(get_lengths_of_parts(x)) > 0 else 0)
-    #df["lex_longest_part_len"] = df["domain_name"].apply(lambda x: max(get_lengths_of_parts(x)) if len(get_lengths_of_parts(x)) > 0 else 0)
-
     df["lex_avg_part_len"] = df["tmp_part_lengths"].apply(lambda x: sum(x) / len(x) if len(x) > 0 else 0)
     df["lex_stdev_part_lens"] = df["tmp_part_lengths"].apply(lambda x: get_stddev(x) if len(x) > 0 else 0)
     df["lex_longest_part_len"] = df["tmp_part_lengths"].apply(lambda x: max(x) if len(x) > 0 else 0)
 
-    # New part length distribution features
+    # Length distribution
     df["lex_short_part_count"] = df["tmp_part_lengths"].apply(lambda x: len([pl for pl in x if pl <= 3]) if len(x) > 0 else 0)
     df["lex_medium_part_count"] = df["tmp_part_lengths"].apply(lambda x: len([pl for pl in x if pl >= 4 and pl <= 10]) if len(x) > 0 else 0)
     df["lex_long_part_count"] = df["tmp_part_lengths"].apply(lambda x: len([pl for pl in x if pl >= 11 and pl <= 30]) if len(x) > 0 else 0)
     df["lex_superlong_part_count"] = df["tmp_part_lengths"].apply(lambda x: len([pl for pl in x if pl >= 31]) if len(x) > 0 else 0)
-    # End of New part length distribution features
-
-
     df["lex_shortest_sub_len"] = df["tmp_concat_subdomains"].apply(lambda x: min(get_lengths_of_parts(x)) if len(get_lengths_of_parts(x)) > 0 else 0)
 
-
+    # Ip address in domain
+    df["lex_ipv4_in_domain"] = df["domain_name"].apply(lambda x: 1 if contains_ipv4(x) else 0)
+    
+    # Suffixes
+    df["lex_has_trusted_suffix"] = df["domain_name"].apply(lambda x: 1 if has_trusted_suffix(x) else 0)
+    df["lex_has_wellknown_suffix"] = df["domain_name"].apply(lambda x: 1 if has_wellknown_suffix(x) else 0)
+    df["lex_has_cdn_suffix"] = df["domain_name"].apply(lambda x: 1 if has_cdn_suffix(x) else 0)
+    df["lex_has_vps_suffix"] = df["domain_name"].apply(lambda x: 1 if has_vps_suffix(x) else 0)
+    df["lex_has_img_suffix"] = df["domain_name"].apply(lambda x: 1 if has_img_suffix(x) else 0)
 
     # Drop temporary columns
     df.drop(columns=['tmp_tld', 'tmp_sld', 'tmp_stld', 'tmp_concat_subdomains', 'tmp_part_lengths'], inplace=True)
