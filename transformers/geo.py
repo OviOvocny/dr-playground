@@ -1,9 +1,9 @@
 from pandas import DataFrame
 import numpy as np
-from ._helpers import get_stddev
+from ._helpers import get_stddev, get_mean, get_min, get_max
 
 continents = {
-    'North America': ['Canada', 'United States', 'Mexico', 'Bermuda'],
+    'North America': ['Canada', 'United States', 'United States of America', 'Mexico', 'Bermuda'],
     'South America': ['Brazil', 'Argentina', 'Peru', 'Chile', 'Colombia', 'Ecuador', 'Venezuela', 'Bolivia', 'Paraguay', 'Suriname', 'Uruguay'],
     'Europe': ['United Kingdom', 'France', 'Italy', 'Germany', 'Spain', 'Ukraine', 'Poland', 'Romania', 'Netherlands', 'Belgium', 'Greece', 'Portugal', 'Czechia', 'Czech Republic' 'Hungary', 'Sweden', 'Austria', 'Switzerland', 'Bulgaria', 'Denmark', 'Finland', 'Norway', 'Ireland', 'Croatia', 'Slovakia', 'Lithuania', 'Slovenia', 'Latvia', 'Estonia', 'Luxembourg', 'Malta', 'Iceland', 'Jersey', 'Isle of Man', 'Monaco', 'Liechtenstein'],
     'Africa': ['Nigeria', 'Ethiopia', 'Egypt', 'Democratic Republic of the Congo', 'Tanzania', 'South Africa', 'Kenya', 'Uganda', 'Algeria', 'Sudan', 'Morocco', 'Angola', 'Mozambique', 'Ghana', 'Madagascar', 'Cameroon', 'Côte d’Ivoire', 'Niger', 'Burkina Faso', 'Mali', 'Malawi', 'Zambia', 'Somalia', 'Senegal', 'Chad', 'Zimbabwe', 'Guinea', 'Rwanda', 'Benin', 'Tunisia', 'Burundi', 'South Sudan', 'Togo', 'Sierra Leone', 'Libya', 'Central African Republic', 'Eritrea', 'Namibia', 'Gambia', 'Botswana', 'Gabon', 'Lesotho', 'Guinea-Bissau', 'Equatorial Guinea', 'Mauritania', 'Eswatini', 'Djibouti', 'Comoros', 'Cape Verde', 'São Tomé and Príncipe'],
@@ -46,10 +46,20 @@ country_ids = {
     "South Africa": 162, "South Korea": 163, "South Sudan": 164, "Spain": 165, "Sri Lanka": 166, "Sudan": 167, "Suriname": 168, "Sweden": 169,
     "Switzerland": 170, "Syria": 171, "Tajikistan": 172, "Tanzania": 173, "Thailand": 174, "Timor-Leste": 175, "Togo": 176, "Tonga": 177,
     "Trinidad and Tobago": 178, "Tunisia": 179, "Turkey": 180, "Turkmenistan": 181, "Tuvalu": 182, "Uganda": 183, "Ukraine": 184,
-    "United Arab Emirates": 185, "United Kingdom": 186, "United States of America": 187, "Uruguay": 188, "Uzbekistan": 189, "Vanuatu": 190,
+    "United Arab Emirates": 185, "United Kingdom": 186, "United States of America": 187, "United States": 187, "Uruguay": 188, "Uzbekistan": 189, "Vanuatu": 190,
     "Venezuela": 191, "Vietnam": 192, "Yemen": 193, "Zambia": 194, "Zimbabwe": 195,
     "Unknown": 300
 }
+
+_malicious_domain_top_hosting_countries = [
+    187, # USA
+    144, # Russia
+    37,  # China
+    24,  # Brazil
+    192, # Vietnam
+    184, # Ukraine
+    78,  # India
+]
 
 def get_continent_name(country_name):
     for continent, countries in continents.items():
@@ -70,21 +80,21 @@ def get_continent_id(country_name):
     
 
 def hash_continents(countries):
-    if countries == None:
+    if not countries:
         return 0
-    elif len(countries) == 0:
-        return 0
+
+    continents_set = set()
+    for country_name in countries:
+        try:
+            continent_id = get_continent_id(country_name)
+            continents_set.add(continent_id)
+        except:
+            continue
 
     hash = 0
     continent_ids_count = len(continent_ids)
 
-    for country_name in countries:
-        continent_id = 0
-        continent_ids_count = len(continent_ids)
-        try:
-            continent_id = get_continent_id(country_name)
-        except:
-            continent_id = 0
+    for continent_id in continents_set:
         hash += continent_id
 
         if continent_id > continent_ids_count:
@@ -93,61 +103,81 @@ def hash_continents(countries):
     return hash % 2147483647
 
 
+def get_continent_count(countries):
+    if not countries:
+        return 0
+
+    continents_set = set()
+    for country_name in countries:
+        try:
+            continent_id = get_continent_id(country_name)
+            continents_set.add(continent_id)
+        except:
+            continue
+
+    return len(continents_set)
+
+
 def hash_countries(countries):
-    if countries == None:
+    if not countries:
         return 0
-    elif len(countries) == 0:
-        return 0
+
+    country_ids_set = set()
+    for country_name in countries:
+        country_id = 300  # Unknown
+        if country_name in country_ids:
+            country_id = country_ids[country_name]
+        country_ids_set.add(country_id)
 
     hash = 0
     country_ids_count = len(country_ids)
 
-    for country_name in countries:
-        country_id = 300 # Unknown
-        if country_name in country_ids.keys():
-            country_id = country_ids[country_name]
+    for country_id in country_ids_set:
         hash += country_id
 
         if hash > country_ids_count:
             hash *= 2
-    
+
     return hash % 2147483647
 
-def add_countries_count(df: DataFrame) -> DataFrame:
-    """
-    Calculate number of countries for each domain.
-    Input: DF with countries column
-    Output: DF with countries_count column added
-    """
-    df['geo_countries_count'] = df['countries'].apply(lambda countries: len(list(set(countries))) if countries is not None else 0)
-    return df
 
+def has_malicious_hosting_country(countries):
+    if not countries:
+        return 0
 
+    country_ids_set = set()
+    for country_name in countries:
+        if country_name in country_ids:
+            country_id = country_ids[country_name]
+            if country_id in _malicious_domain_top_hosting_countries:
+                return 1
+        
+    return 0
 
-#NOTUSED# def add_coord_stddev(df: DataFrame) -> DataFrame:
-#NOTUSED#     """
-#NOTUSED#     Calculate standard deviation of coordinates.
-#NOTUSED#     Input: DF with longitues and latitudes columns
-#NOTUSED#     Output: DF with lat_stddev and lon_stddev columns added
-#NOTUSED#     """
-#NOTUSED#     df['geo_lat_stddev'] = df['latitudes'].apply(get_stddev)
-#NOTUSED#     df['geo_lon_stddev'] = df['longitudes'].apply(get_stddev)
-#NOTUSED#     return df
-
-def add_coord_stddev(df: DataFrame) -> DataFrame:
-    """
-    Calculate standard deviation of coordinates.
-    Input: DF with longitues and latitudes columns
-    Output: DF with lat_stddev and lon_stddev columns added
-    """
-    df['geo_lat_stdev'] = df['latitudes'].apply(get_stddev)
-    df['geo_lon_stdev'] = df['longitudes'].apply(get_stddev)
-    return df
 
 def geo(df: DataFrame) -> DataFrame:
-    df = add_countries_count(df)
-    #NOTUSED# df = add_coord_stddev(df)
-    df = add_coord_stddev(df)
+    df['geo_countries_count'] = df['countries'].apply(lambda countries: len(list(set(countries))) if countries is not None else 0)
+    df['geo_continents_count'] = df['countries'].apply(get_continent_count)
+
+    df['geo_malic_host_country'] = df['countries'].apply(has_malicious_hosting_country)
+
+    df['geo_lat_stdev'] = df['latitudes'].apply(get_stddev)
+    df['geo_lon_stdev'] = df['longitudes'].apply(get_stddev)
+    df['geo_mean_lat'] = df['latitudes'].apply(get_mean)  # Central latitude
+    df['geo_mean_lon'] = df['longitudes'].apply(get_mean) # Central longitude
+
+    df['geo_min_lat'] = df['latitudes'].apply(get_min)
+    df['geo_max_lat'] = df['latitudes'].apply(get_max)
+    df['geo_min_lon'] = df['longitudes'].apply(get_min)
+    df['geo_max_lon'] = df['longitudes'].apply(get_max)
+
+    df['geo_lat_range'] = df.apply(lambda row: (row['geo_max_lat'] - row['geo_min_lat']) if row['geo_max_lat'] is not None and row['geo_min_lat'] is not None else 0.0, axis=1)
+    df['geo_lon_range'] = df.apply(lambda row: (row['geo_max_lat'] - row['geo_min_lat']) if row['geo_max_lat'] is not None and row['geo_min_lat'] is not None else 0.0, axis=1)
+
+    df['geo_centroid_lat'] = df.apply(lambda row: (row['geo_min_lat'] + row['geo_max_lat'] / 2) if row['geo_min_lat'] is not None and row['geo_max_lat'] is not None else 0.0, axis=1)
+    df['geo_centroid_lon'] = df.apply(lambda row: (row['geo_min_lon'] + row['geo_max_lon'] / 2) if row['geo_min_lon'] is not None and row['geo_max_lon'] is not None else 0.0, axis=1)
+
+    df['geo_estimated_area'] = df['geo_lat_range'] * df['geo_lon_range'] # area of the bounding box
 
     df["geo_continent_hash"] = df["countries"].apply(hash_continents)
     df["geo_countries_hash"] = df["countries"].apply(hash_countries)

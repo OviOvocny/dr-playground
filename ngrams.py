@@ -143,8 +143,8 @@ class NgramsAnalyzer:
 
 if __name__ == '__main__':
     analyzer = NgramsAnalyzer('floor/phishing.parquet')
-    analyzer.analyze_ngrams(50, 'ngram_freq_phishing.json')
+    analyzer.analyze_ngrams(200, 'ngram_freq_phishing.json')
     analyzer = NgramsAnalyzer('floor/malware.parquet')
-    analyzer.analyze_ngrams(50, 'ngram_freq_malware.json')
+    analyzer.analyze_ngrams(200, 'ngram_freq_malware.json')
     analyzer = NgramsAnalyzer('floor/dga.parquet')
-    analyzer.analyze_ngrams(500, 'ngram_freq_dga.json')
+    analyzer.analyze_ngrams(1000, 'ngram_freq_dga.json')

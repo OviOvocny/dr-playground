@@ -7,17 +7,24 @@ import re
 
 import math
 import tldextract
-from ._helpers import get_normalized_entropy, get_stddev
+from ._helpers import get_normalized_entropy, get_stddev, simhash
 
-phishing_keywords = {
+phishing_keywords = [
     "account", "action", "alert", "app", "auth", "bank", "billing", "center", "chat", "device", "fax", "event",
     "find", "free", "gift", "help", "info", "invoice", "live", "location", "login", "mail", "map", "message",
     "my", "new", "nitro", "now", "online", "pay", "promo", "real", "required", "safe", "secure", "security",
     "service", "signin", "support", "track", "update", "verification", "verify", "vm", "web"
-}
+]
+
+benign_keywords = [
+    "blog", "book", "buy", "community", "design", "dev", "diary", "doc", "download", "edu", "family", "forum",
+    "gallery", "game", "health", "home", "host", "lab", "learn", "media", "news", "photo", "play", "project",
+    "research", "review", "school", "shop", "site", "store", "studio", "tech", "tutorial", "video", "wiki", "work",
+    "safeframe", "googlesyndication", "silverhat", "fitcrack", "feta", "vut", "cesnet"
+]
 
 _trusted_suffixes = ["googlesyndication.com", "office.com", "fbcdn.net", "gstatic.com", "yahoodns.net",
-                     "fbcdn.net", "pinimg.com", "vut.cz", "vutbr.cz", "cvut.cz", "cuni.cz", "muni.cz", "cesnet.cz"]
+                     "fbcdn.net", "pinimg.com", "vut.cz", "vutbr.cz", "cvut.cz", "cuni.cz", "muni.cz", "cesnet.cz", "fitcrack.cz"]
 
 _well_known_suffixes = [
     "google.com", "facebook.com", "apple.com", "microsoft.com", "amazon.com",
@@ -79,8 +86,73 @@ def has_vps_suffix(domain):
 def has_img_suffix(domain):
     return any(domain.endswith(suffix) for suffix in _image_hosting_suffixes)
 
+def calculate_suffix_score(has_trusted_suffix, has_wellknown_suffix, has_cdn_suffix, has_vps_suffix, has_img_suffix):
+    if has_trusted_suffix == None:
+        has_trusted_suffix = 0
+    if has_wellknown_suffix == None:
+        has_wellknown_suffix = 0
+    if has_cdn_suffix == None:
+        has_cdn_suffix = 0
+    if has_vps_suffix == None:
+        has_vps_suffix = 0
+    if has_img_suffix == None:
+        has_img_suffix = 0
 
+    TRUSTED_SUFFIX_SCORE = 10
+    WELLKNOWN_SUFFIX_SCORE = 5
+    CDN_SUFFIX_SCORE = 3
+    VPS_SUFFIX_SCORE = 2
+    IMG_SUFFIX_SCORE = 8 # Usually contains just images
 
+    return has_trusted_suffix * TRUSTED_SUFFIX_SCORE + \
+            has_wellknown_suffix * WELLKNOWN_SUFFIX_SCORE + \
+            has_cdn_suffix * CDN_SUFFIX_SCORE + \
+            has_vps_suffix * VPS_SUFFIX_SCORE + \
+            has_img_suffix * IMG_SUFFIX_SCORE
+
+_tld_abuse_scores = { # Source: https://www.scoutdns.com/most-abused-top-level-domains-list-october-scoutdns/
+    'com': 0.6554,
+    'net': 0.1040,
+    'eu': 0.0681,
+    'name': 0.0651,
+    'co': 0.0107,
+    'life': 0.0087,
+    'moe': 0.0081,
+    'org': 0.0081,
+    'xyz': 0.0072,
+    'site': 0.0051,
+    'ch': 0.0051,
+    'it': 0.0048,
+    'club': 0.0046,
+    'info': 0.0043,
+    'de': 0.0041,
+    'racing': 0.0040,
+    'live': 0.0035,
+    'ru': 0.0034,
+    'cc': 0.0034,
+    'mobi': 0.0029,
+    'me': 0.0023,
+    'au': 0.0020,
+    'cn': 0.0019,
+    'pw': 0.0014,
+    'in': 0.0011,
+    'fr': 0.0010,
+    'be': 0.0010,
+    'pro': 0.0010,
+    'top': 0.0009,
+    'stream': 0.0007,
+}
+
+def get_tld_abuse_score(tld):
+    # Dictionary containing the abuse scores for the provided TLDs
+    
+    # Remove the dot from the start of the TLD if it exists
+    tld = tld.lstrip('.')
+    
+    # Return the abuse score if the TLD is in the dictionary, otherwise return 0
+    return _tld_abuse_scores.get(tld, 0)
+
+ 
 # Compile the regular expressions for both patterns
 _ipv4_standard_format = re.compile(r'(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)')
 _ipv4_dashed_format = re.compile(r'(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)-){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)')
@@ -351,6 +423,7 @@ def lex(df: DataFrame) -> DataFrame:
     # NOTUSED# df['lex_digit_count'] = df['domain_name'].apply(lambda x: sum([1 for y in x if y.isdigit()]))
     df['lex_has_digit'] = df['domain_name'].apply(lambda x: 1 if sum([1 for y in x if y.isdigit()]) > 0 else 0)
     df['lex_phishing_keyword_count'] = df['domain_name'].apply(lambda x: sum(1 for w in phishing_keywords if w in x))
+    df['lex_benign_keyword_count'] = df['domain_name'].apply(lambda x: sum(1 for w in benign_keywords if w in x))
     # NOTUSED# df['lex_vowel_count'] = df['domain_name'].apply(lambda x: vowel_count(x))
     # NOTUSED# df['lex_underscore_hyphen_count'] = df['domain_name'].apply(lambda x: total_underscores_and_hyphens(x))
     df['lex_consecutive_chars'] = df['domain_name'].apply(lambda x: consecutive_chars(x))
@@ -362,12 +435,15 @@ def lex(df: DataFrame) -> DataFrame:
     df['tmp_stld'] = df['tmp_sld'] + "." + df['tmp_tld']
     df['tmp_concat_subdomains'] = df['domain_name'].apply(lambda x: remove_tld(x).replace(".", ""))
 
-    df['lex_tld_len'] = df['tmp_tld'].apply(len)  # Length of TLD
+    # TLD-based features
+    df['lex_tld_len'] = df['tmp_tld'].apply(len) # Length of TLD
+    df['lex_tld_abuse_score'] = df['tmp_tld'].apply(get_tld_abuse_score)  # TLD abuse score
+    df['lex_tld_hash'] = df['tmp_tld'].apply(simhash) # TLD hash
+
+    # SLD-based features
     df['lex_sld_len'] = df['tmp_sld'].apply(len)  # Length of SLD
     df['lex_sld_norm_entropy'] = df['tmp_sld'].apply(
         get_normalized_entropy)  # Normalized entropy od the SLD only
-    
-    # new SLD-based features
     df['lex_sld_phishing_keyword_count'] = df['tmp_sld'].apply(lambda x: sum(1 for w in phishing_keywords if w in x))
     df['lex_sld_vowel_count'] = df['tmp_sld'].apply(lambda x: vowel_count(x))
     df['lex_sld_vowel_ratio'] = df['tmp_sld'].apply(lambda x: (vowel_count(x) / len(x)) if len(x) > 0 else 0)
@@ -447,6 +523,8 @@ def lex(df: DataFrame) -> DataFrame:
     df["lex_has_cdn_suffix"] = df["domain_name"].apply(lambda x: 1 if has_cdn_suffix(x) else 0)
     df["lex_has_vps_suffix"] = df["domain_name"].apply(lambda x: 1 if has_vps_suffix(x) else 0)
     df["lex_has_img_suffix"] = df["domain_name"].apply(lambda x: 1 if has_img_suffix(x) else 0)
+    df['lex_suffix_score'] = df.apply(lambda row: calculate_suffix_score(row['lex_has_trusted_suffix'], row['lex_has_wellknown_suffix'], row["lex_has_cdn_suffix"],
+                                row["lex_has_vps_suffix"], row["lex_has_img_suffix"]),axis=1)
 
     # Drop temporary columns
     df.drop(columns=['tmp_tld', 'tmp_sld', 'tmp_stld', 'tmp_concat_subdomains', 'tmp_part_lengths'], inplace=True)

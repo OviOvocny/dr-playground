@@ -1,9 +1,5 @@
 from pandas import DataFrame, Series, concat
-from ._helpers import map_dict_to_series, get_normalized_entropy
-import hashlib
-
-def hash_text(input):
-    return int(hashlib.md5(input.encode("utf-8")).hexdigest(), 16) % 2147483647
+from ._helpers import map_dict_to_series, get_normalized_entropy, simhash
 
 def rdap(df: DataFrame) -> DataFrame:
     """
@@ -55,7 +51,7 @@ def get_rdap_domain_features(rdap_entities):
             if "name" in rdap_entities["registrar"][0] and rdap_entities["registrar"][0]["name"] is not None:
                 registrar_name_len = len(rdap_entities["registrar"][0]["name"])
                 registrar_name_entropy = get_normalized_entropy(rdap_entities["registrar"][0]["name"])
-                registrar_name_hash = hash_text(rdap_entities["registrar"][0]["name"]) # Makes sense due more than in registrant
+                registrar_name_hash = simhash(rdap_entities["registrar"][0]["name"]) # Makes sense due more than in registrant
 
         if "registrant" in rdap_entities and rdap_entities["registrant"] is not None and len(rdap_entities["registrant"]) > 0:
             if "name" in rdap_entities["registrant"][0] and rdap_entities["registrant"][0]["name"] is not None:

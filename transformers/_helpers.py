@@ -1,5 +1,6 @@
 import math
 import numpy as np
+import hashlib
 from typing import Optional
 from pandas import Series
 
@@ -9,6 +10,31 @@ from pandas import Series
 # If you feel like you've created a helper function for your transformer 
 # that you think could be useful for others, please extract it to here.
 
+def hash_md5(input):
+    return int(hashlib.md5(input.encode("utf-8")).hexdigest(), 16) % 2147483647
+
+# Similarity hashing
+def simhash(data, hash_bits=32):
+    v = [0] * hash_bits
+    
+    for d in data:
+        # Hash the data to get hash_bits number of bits
+        hashed = int(hashlib.md5(d.encode('utf-8')).hexdigest(), 16)
+        
+        for i in range(hash_bits):
+            bitmask = 1 << i
+            if hashed & bitmask:
+                v[i] += 1
+            else:
+                v[i] -= 1
+    
+    fingerprint = 0
+    for i in range(hash_bits):
+        if v[i] >= 0:
+            fingerprint += 1 << i
+    
+    return fingerprint
+
 def get_stddev(values):
     if values is None:
         return 0.0
@@ -16,6 +42,34 @@ def get_stddev(values):
     if 0 <= len(v) <= 1:
         return 0.0
     return float(np.std(v))
+
+
+def get_mean(values):
+    if values is None:
+        return 0.0
+    v = [float(x) for x in values if x is not None]
+    if len(v) == 0:
+        return 0.0
+    return float(np.mean(v))
+
+
+def get_min(values):
+    if values is None:
+        return 0.0
+    v = [float(x) for x in values if x is not None]
+    if len(v) == 0:
+        return 0.0
+    return float(np.min(v))
+
+
+def get_max(values):
+    if values is None:
+        return 0.0
+    v = [float(x) for x in values if x is not None]
+    if len(v) == 0:
+        return 0.0
+    return float(np.min(v))
+
 
 def mean_of_existing_values(values):
     """
