@@ -12,3 +12,7 @@ __pycache__/
 dp-things/*
 
 .idea/
+
+false_positives/*.pdf
+false_positives/force_plots/*.pdf
+false_positives/waterfall_plots/*.pdf
