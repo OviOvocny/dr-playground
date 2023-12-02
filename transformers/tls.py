@@ -2,13 +2,15 @@ import datetime
 import re
 from pandas import DataFrame, Series, concat
 from pandas.errors import OutOfBoundsDatetime
+from ._helpers import todays_midnight_timestamp, hash_md5
 
 def run_analyzer(row: Series) -> Series:
     """
     Run all analyzers on the row.
     """
     tls = row["tls"]
-    date = row["tls_evaluated_on"]
+    #date = row["tls_evaluated_on"]
+    date = todays_midnight_timestamp()
     analysis_result = analyze_tls(tls, date)
     return Series(analysis_result['features'])
 
@@ -22,6 +24,20 @@ def tls(df: DataFrame) -> DataFrame:
     df.drop(columns=['tls'], inplace=True)
     df = concat([df, tls_columns], axis=1)
     return df
+
+def cert_is_self_signed(certificate):
+    authority_key_identifier = None
+    subject_key_identifier = None
+
+    for extension in certificate['extensions']:
+        if extension['name'] == 'authorityKeyIdentifier':
+            authority_key_identifier = extension['value']
+        elif extension['name'] == 'subjectKeyIdentifier':
+            subject_key_identifier = extension['value']
+
+    # A certificate is self-signed if both identifiers are present and equal
+    return authority_key_identifier == subject_key_identifier
+
 
 def encodePolicy(oid):
     if not oid:
@@ -66,6 +82,9 @@ def analyze_tls(item: dict, collection_date: datetime.datetime) -> dict:
         features = { 
             "tls_has_tls": False,                           # Has TLS
             "tls_chain_len": None,                          # Length of certificate chain
+            "tls_is_self_signed": None,                     # Is self-signed
+            "tls_root_authority_hash": None,                # Hash of root certificate authority
+            "tls_leaf_authority_hash": None,                # Hash of leaf certificate authority
             "tls_negotiated_version_id": None,              # Evaluated TLS version
             "tls_negotiated_cipher_id": None,               # Evaluated cipher
             "tls_root_cert_validity_len": None,             # Total validity time of root certificate
@@ -141,6 +160,9 @@ def analyze_tls(item: dict, collection_date: datetime.datetime) -> dict:
     isoitu_policy_oid = None
     CA_count = 0  # Ration of CA certificates in chain
     CA_ratio = 0
+    leaf_cert_organization = ""
+    root_cert_organization = ""
+    is_self_signed = 0
     
     ### NUMBER OF SUBJECTS if SAN ###
     subject_count = 0
@@ -155,6 +177,8 @@ def analyze_tls(item: dict, collection_date: datetime.datetime) -> dict:
     cert_counter = 0
     for certificate in item['certificates']: 
         cert_counter += 1
+        
+        organization = certificate['organization'] if certificate['organization'] and certificate['organization'] is not None else ""
         
         validity_len = round(int(certificate['valid_len']) / (60*60*24))
         
@@ -179,12 +203,17 @@ def analyze_tls(item: dict, collection_date: datetime.datetime) -> dict:
             break
     
         if cert_counter == 1:
+            leaf_cert_organization = organization
             leaf_crt_validity_len = validity_len
             leaf_crt_lifetime = lifetime
+            if cert_is_self_signed(certificate):
+                is_self_signed = 1
+
             #leaf_cert_time_to_live = time_to_expire
             
             
         if certificate['is_root']:
+            root_cert_organization = organization
             root_crt_validity_len = validity_len
             root_crt_lifetime = lifetime
             #root_crt_time_to_expire = time_to_expire
@@ -270,13 +299,16 @@ def analyze_tls(item: dict, collection_date: datetime.datetime) -> dict:
     features = { 
         "tls_has_tls": True,                                         # Has TLS
         "tls_chain_len": item['count'],                              # Length of certificate chain
+        "tls_is_self_signed": is_self_signed,                        # Is self-signed
+        "tls_root_authority_hash": hash_md5(root_cert_organization), # Hash of root certificate authority
+        "tls_leaf_authority_hash": hash_md5(leaf_cert_organization), # Hash of leaf certificate authority
         "tls_negotiated_version_id": tls_version_id,                 # Evaluated TLS version
         "tls_negotiated_cipher_id": tls_cipher_id,                   # Evaluated cipher
         "tls_root_cert_validity_len": root_crt_validity_len,         # Total validity time of root certificate
-        "tls_root_cert_lifetime": root_crt_lifetime,                 # How long was the root certificate valid at the time of collection
+        #NOGO!# "tls_root_cert_lifetime": root_crt_lifetime,         # How long was the root certificate valid at the time of collection
         #NOTUSED# "tls_root_cert_validity_remaining": root_crt_time_to_expire, # Time to expire of root certificate from time of collection
         "tls_leaf_cert_validity_len": leaf_crt_validity_len,         # Total validity time of leaf certificate      
-        "tls_leaf_cert_lifetime": leaf_crt_lifetime,                 # How long was the leaf certificate valid at the time of collection
+        #NOGO!# "tls_leaf_cert_lifetime": leaf_crt_lifetime,         # How long was the leaf certificate valid at the time of collection
         #NOTUSED# "tls_leaf_cert_validity_remaining": leaf_cert_time_to_live,  # Time to expire of leaf certificate from time of collection      
         #NOTUSED# "tls_mean_certs_validity_len": mean_cert_len,      # Mean validity time of all certificates in chain including root
         "tls_broken_chain": broken_chain,                            # Chain was never valid, 

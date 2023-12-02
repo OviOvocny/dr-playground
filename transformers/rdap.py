@@ -1,16 +1,25 @@
 from pandas import DataFrame, Series, concat
-from ._helpers import map_dict_to_series, get_normalized_entropy, simhash
+from ._helpers import map_dict_to_series, get_normalized_entropy, simhash, todays_midnight_timestamp
 
 def rdap(df: DataFrame) -> DataFrame:
     """
     TODO: document
     """
+    extraction_ts = todays_midnight_timestamp()
 
     # add rdap derived columns
     df['rdap_registration_period'] = df['rdap_expiration_date'] - df['rdap_registration_date']
-    df['rdap_domain_age'] = df['rdap_evaluated_on'] - df['rdap_registration_date']
-    df['rdap_time_from_last_change'] = df['rdap_evaluated_on'] - df['rdap_last_changed_date']
-    df["rdap_domain_active_time"] = df[["dns_evaluated_on", "rdap_expiration_date"]].max(axis=1)  - df['rdap_registration_date']
+    #df['rdap_domain_age'] = (df['rdap_evaluated_on'] - df['rdap_registration_date'])
+    df['rdap_domain_age'] = df['rdap_registration_date'].apply(lambda x: (extraction_ts - x).total_seconds() / (60 * 60 * 24))
+    #df['rdap_time_from_last_change'] = df['rdap_evaluated_on'] - df['rdap_last_changed_date']
+    df['rdap_time_from_last_change'] = df['rdap_last_changed_date'].apply(lambda x: (extraction_ts - x).total_seconds() / (60 * 60 * 24))
+
+
+    # rdap_domain_active_time = min(extraction_ts, rdap_expiration_date) - rdap_registration_date
+    df["rdap_domain_active_time"] = (df["rdap_expiration_date"].apply(lambda x: min(extraction_ts, x)) \
+                                     - df['rdap_registration_date']).apply(lambda x: x.total_seconds() / (60 * 60 * 24))
+    #df["rdap_domain_active_time"] = df[["dns_evaluated_on", "rdap_expiration_date"]].min(axis=1)  - df['rdap_registration_date']
+
     #NOTUSED# df['rdap_domain_time_from_last_change'] = df['dns_evaluated_on'] - df['domain_last_changed_date']
 
     df["rdap_has_dnssec"] = df["rdap_dnssec"].astype("bool")

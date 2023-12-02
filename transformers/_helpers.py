@@ -1,6 +1,7 @@
 import math
 import numpy as np
 import hashlib
+import datetime
 from typing import Optional
 from pandas import Series
 
@@ -9,6 +10,22 @@ from pandas import Series
 # They are not meant to be used directly, but are imported by the transformers.
 # If you feel like you've created a helper function for your transformer 
 # that you think could be useful for others, please extract it to here.
+
+# Returns the timestamp representing day of feature extraction
+# Time is set to 00:00:00 (midnight) to eliminate difference between individual domains
+# NOTE: If used in features, all parquet files should be generated on the same day
+def todays_midnight_timestamp():
+    # Get today's date
+    today = datetime.date.today()
+
+    # Create a datetime object for midnight of today
+    midnight = datetime.datetime.combine(today, datetime.time())
+
+    # Convert to timestamp
+    #midnight_timestamp = midnight.timestamp()
+
+    #return midnight_timestamp
+    return midnight
 
 def hash_md5(input):
     return int(hashlib.md5(input.encode("utf-8")).hexdigest(), 16) % 2147483647

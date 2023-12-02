@@ -444,6 +444,10 @@ def lex(df: DataFrame) -> DataFrame:
     df['lex_sld_len'] = df['tmp_sld'].apply(len)  # Length of SLD
     df['lex_sld_norm_entropy'] = df['tmp_sld'].apply(
         get_normalized_entropy)  # Normalized entropy od the SLD only
+    df['lex_sld_digit_count'] = df['tmp_sld'].apply(
+        lambda x: (sum([1 for y in x if y.isdigit()])) if len(x) > 0 else 0).astype("float")
+    df['lex_sld_digit_ratio'] = df['tmp_sld'].apply(
+        lambda x: (sum([1 for y in x if y.isdigit()]) / len(x)) if len(x) > 0 else 0)  # Digit ratio in subdomains    
     df['lex_sld_phishing_keyword_count'] = df['tmp_sld'].apply(lambda x: sum(1 for w in phishing_keywords if w in x))
     df['lex_sld_vowel_count'] = df['tmp_sld'].apply(lambda x: vowel_count(x))
     df['lex_sld_vowel_ratio'] = df['tmp_sld'].apply(lambda x: (vowel_count(x) / len(x)) if len(x) > 0 else 0)
@@ -494,6 +498,8 @@ def lex(df: DataFrame) -> DataFrame:
     df["lex_phishing_bigram_matches"] = df["tmp_concat_subdomains"].apply(find_ngram_matches, args=(_phishing_ngram_freq["bigram_freq"],))
     df["lex_phishing_trigram_matches"] = df["tmp_concat_subdomains"].apply(find_ngram_matches, args=(_phishing_ngram_freq["trigram_freq"],))
     df["lex_phishing_tetragram_matches"] = df["tmp_concat_subdomains"].apply(find_ngram_matches, args=(_phishing_ngram_freq["tetragram_freq"],))
+    df["lex_phishing_pentagram_matches"] = df["tmp_concat_subdomains"].apply(find_ngram_matches, args=(_phishing_ngram_freq["pentagram_freq"],))
+
     df["lex_malware_bigram_matches"] = df["tmp_concat_subdomains"].apply(find_ngram_matches, args=(_malware_ngram_freq["bigram_freq"],))
     df["lex_malware_trigram_matches"] = df["tmp_concat_subdomains"].apply(find_ngram_matches, args=(_malware_ngram_freq["trigram_freq"],))
     df["lex_malware_tetragram_matches"] = df["tmp_concat_subdomains"].apply(find_ngram_matches, args=(_malware_ngram_freq["tetragram_freq"],))
