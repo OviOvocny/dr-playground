@@ -15,3 +15,4 @@ nltk>=3.8.1
 shap~=0.42.1
 numba~=0.57.1
 numpy~=1.24.4
+PDPbox>=0.3.0

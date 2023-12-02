@@ -4,7 +4,7 @@ from pyarrow import Table
 import schema
 
 nontraining_fields = [
-    #"domain_name",
+    "domain_name",
     "dns_evaluated_on",
     "rdap_evaluated_on",
     "tls_evaluated_on",
