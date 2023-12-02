@@ -1,1 +1,0 @@
-This is a directory where the loader stores parquet files of the raw data pulled from mongo to avoid constantly running the aggregation pipeline.
