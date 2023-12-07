@@ -1,0 +1,19 @@
+2023-12-07 11:08:26,907 - __main__ - INFO - Performing feature engineering on benign dataset: ../../floor/benign_cesnet_union_2307.parquet and malign dataset: ../../floor/phishing_2307.parquet
+2023-12-07 11:09:07,968 - __main__ - INFO - Performing feature engineering on benign dataset: ../../floor/benign_cesnet_union_2307.parquet and malign dataset: ../../floor/phishing_2307.parquet
+2023-12-07 11:09:40,403 - __main__ - INFO - Performing feature engineering on benign dataset: ../../floor/benign_cesnet_union_2307.parquet and malign dataset: ../../floor/phishing_2307.parquet
+2023-12-07 11:09:40,772 - __main__ - INFO - Determining which features from tls and rdap are time dependant
+2023-12-07 11:10:23,795 - __main__ - INFO - Performing feature engineering on benign dataset: ../../floor/benign_cesnet_union_2307.parquet and malign dataset: ../../floor/phishing_2307.parquet
+2023-12-07 11:10:24,089 - __main__ - INFO - Determining which features from tls and rdap are time dependant
+2023-12-07 11:10:27,579 - __main__ - INFO - Time dependant features histogram saved to ../../false_positives/images/relative_freq_histograms.png
+2023-12-07 11:12:28,000 - __main__ - INFO - [34mPerforming feature engineering on benign dataset: ../../floor/benign_cesnet_union_2307.parquet and malign dataset: ../../floor/phishing_2307.parquet[0m
+2023-12-07 11:12:28,370 - __main__ - INFO - [33mDetermining which features from tls and rdap are time dependent[0m
+2023-12-07 11:12:30,716 - __main__ - INFO - Time dependant features histogram saved to ../../false_positives/images/relative_freq_histograms.png
+2023-12-07 11:13:14,963 - __main__ - INFO - [34mPerforming feature engineering on benign dataset: ../../floor/benign_cesnet_union_2307.parquet and malign dataset: ../../floor/phishing_2307.parquet[0m
+2023-12-07 11:13:15,244 - __main__ - INFO - [33mDetermining which features from tls and rdap are time dependent[0m
+2023-12-07 11:13:17,227 - __main__ - INFO - [32mSaved possible time dependand features of TLS and RDAP to ../../false_positives/images/relative_freq_histograms.png[0m
+2023-12-07 11:15:14,193 - __main__ - INFO - [34mPerforming feature engineering on benign dataset: ../../floor/benign_cesnet_union_2307.parquet and malign dataset: ../../floor/phishing_2307.parquet[0m
+2023-12-07 11:15:14,516 - __main__ - INFO - [33mDetermining which features from tls and rdap are time dependent[0m
+2023-12-07 11:15:16,901 - __main__ - INFO - [32mSaved possible time dependand features of TLS and RDAP to ../../false_positives/images/relative_freq_histograms.png[0m
+2023-12-07 11:15:31,130 - __main__ - INFO - [34mPerforming feature engineering on benign dataset: ../../floor/benign_cesnet_union_2307.parquet and malign dataset: ../../floor/phishing_2307.parquet[0m
+2023-12-07 11:15:31,709 - __main__ - INFO - [33mDetermining which features from tls and rdap are time dependent[0m
+2023-12-07 11:15:34,076 - __main__ - INFO - [32mSaved possible time dependand features of TLS and RDAP to ../../false_positives/images/relative_freq_histograms.png[0m
