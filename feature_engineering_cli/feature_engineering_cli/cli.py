@@ -184,7 +184,7 @@ class FeatureEngineeringCLI:
         plt.savefig('../../false_positives/images/relative_freq_histograms.png', dpi=300)  # Save the plot as a high-resolution PNG
         plt.close()
 
-        
+        self.logger.info(self.color_log('\n', Fore.GREEN))
         self.logger.info(self.color_log('Choosing most relevant features based on feature_importances_', Fore.YELLOW))
         feature_importances = model.feature_importances_
         normalized_importances = (feature_importances - np.min(feature_importances)) / (np.max(feature_importances) - np.min(feature_importances))

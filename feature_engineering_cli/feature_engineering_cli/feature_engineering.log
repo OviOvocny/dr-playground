@@ -276,3 +276,45 @@
 2023-12-07 14:16:16,257 - __main__ - INFO - [36m==============[0m
 2023-12-07 14:16:16,257 - __main__ - INFO - [32mSaved possible time-dependent features to: ../../false_positives/images/relative_freq_histograms.png[0m
 2023-12-07 14:16:16,258 - __main__ - INFO - [32mSaved top 20 feature importances plot to: ../../false_positives/images/top_20_feature_importances.png[0m
+2023-12-07 14:29:43,616 - __main__ - INFO - [36m==============================[0m
+2023-12-07 14:29:43,617 - __main__ - INFO - [36mPerforming Feature Engineering[0m
+2023-12-07 14:29:43,617 - __main__ - INFO - [36m==============================[0m
+2023-12-07 14:29:43,618 - __main__ - INFO - Benign dataset path: ../../floor/benign_cesnet_union_2307.parquet
+2023-12-07 14:29:43,618 - __main__ - INFO - Malign dataset path: ../../floor/phishing_2307.parquet
+2023-12-07 14:29:44,746 - __main__ - INFO - [33mPossibly time demanding feature: tls_root_cert_validity_len[0m
+2023-12-07 14:29:44,747 - __main__ - INFO - [33mPossibly time demanding feature: tls_leaf_cert_validity_len[0m
+2023-12-07 14:29:44,748 - __main__ - INFO - [33mPossibly time demanding feature: tls_root_cert_lifetime[0m
+2023-12-07 14:29:44,748 - __main__ - INFO - [33mPossibly time demanding feature: tls_leaf_cert_lifetime[0m
+2023-12-07 14:29:44,749 - __main__ - INFO - [33mPossibly time demanding feature: ip_mean_average_rtt[0m
+2023-12-07 14:29:44,750 - __main__ - INFO - [33mPossibly time demanding feature: tls_percentage_crt_with_policies[0m
+2023-12-07 14:29:44,751 - __main__ - INFO - [33mPossibly time demanding feature: rdap_domain_age[0m
+2023-12-07 14:29:44,751 - __main__ - INFO - [33mPossibly time demanding feature: rdap_domain_active_time[0m
+2023-12-07 14:29:44,752 - __main__ - INFO - [33mPossibly time demanding feature: rdap_registration_period[0m
+2023-12-07 14:29:47,534 - __main__ - INFO - [33mChoosing most relevant features based on feature_importances_[0m
+2023-12-07 14:29:47,910 - __main__ - INFO - [36m==============[0m
+2023-12-07 14:29:47,911 - __main__ - INFO - [36mSaving Results[0m
+2023-12-07 14:29:47,912 - __main__ - INFO - [36m==============[0m
+2023-12-07 14:29:47,912 - __main__ - INFO - [32mSaved possible time-dependent features to: ../../false_positives/images/relative_freq_histograms.png[0m
+2023-12-07 14:29:47,912 - __main__ - INFO - [32mSaved top 20 feature importances plot to: ../../false_positives/images/top_20_feature_importances.png[0m
+2023-12-07 14:30:29,321 - __main__ - INFO - [36m==============================[0m
+2023-12-07 14:30:29,322 - __main__ - INFO - [36mPerforming Feature Engineering[0m
+2023-12-07 14:30:29,322 - __main__ - INFO - [36m==============================[0m
+2023-12-07 14:30:29,323 - __main__ - INFO - Benign dataset path: ../../floor/benign_cesnet_union_2307.parquet
+2023-12-07 14:30:29,323 - __main__ - INFO - Malign dataset path: ../../floor/phishing_2307.parquet
+2023-12-07 14:30:30,232 - __main__ - INFO - [33mPossibly time demanding feature: tls_root_cert_validity_len[0m
+2023-12-07 14:30:30,233 - __main__ - INFO - [33mPossibly time demanding feature: tls_leaf_cert_validity_len[0m
+2023-12-07 14:30:30,234 - __main__ - INFO - [33mPossibly time demanding feature: tls_root_cert_lifetime[0m
+2023-12-07 14:30:30,235 - __main__ - INFO - [33mPossibly time demanding feature: tls_leaf_cert_lifetime[0m
+2023-12-07 14:30:30,235 - __main__ - INFO - [33mPossibly time demanding feature: ip_mean_average_rtt[0m
+2023-12-07 14:30:30,236 - __main__ - INFO - [33mPossibly time demanding feature: tls_percentage_crt_with_policies[0m
+2023-12-07 14:30:30,236 - __main__ - INFO - [33mPossibly time demanding feature: rdap_domain_age[0m
+2023-12-07 14:30:30,237 - __main__ - INFO - [33mPossibly time demanding feature: rdap_domain_active_time[0m
+2023-12-07 14:30:30,237 - __main__ - INFO - [33mPossibly time demanding feature: rdap_registration_period[0m
+2023-12-07 14:30:33,393 - __main__ - INFO - [32m
+[0m
+2023-12-07 14:30:33,395 - __main__ - INFO - [33mChoosing most relevant features based on feature_importances_[0m
+2023-12-07 14:30:33,833 - __main__ - INFO - [36m==============[0m
+2023-12-07 14:30:33,834 - __main__ - INFO - [36mSaving Results[0m
+2023-12-07 14:30:33,834 - __main__ - INFO - [36m==============[0m
+2023-12-07 14:30:33,835 - __main__ - INFO - [32mSaved possible time-dependent features to: ../../false_positives/images/relative_freq_histograms.png[0m
+2023-12-07 14:30:33,835 - __main__ - INFO - [32mSaved top 20 feature importances plot to: ../../false_positives/images/top_20_feature_importances.png[0m
