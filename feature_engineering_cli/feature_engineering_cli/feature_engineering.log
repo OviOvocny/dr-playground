@@ -17,3 +17,262 @@
 2023-12-07 11:15:31,130 - __main__ - INFO - [34mPerforming feature engineering on benign dataset: ../../floor/benign_cesnet_union_2307.parquet and malign dataset: ../../floor/phishing_2307.parquet[0m
 2023-12-07 11:15:31,709 - __main__ - INFO - [33mDetermining which features from tls and rdap are time dependent[0m
 2023-12-07 11:15:34,076 - __main__ - INFO - [32mSaved possible time dependand features of TLS and RDAP to ../../false_positives/images/relative_freq_histograms.png[0m
+2023-12-07 12:28:54,750 - __main__ - INFO - [34mPerforming feature engineering on benign dataset: ../../floor/benign_cesnet_union_2307.parquet and malign dataset: ../../floor/phishing_2307.parquet[0m
+2023-12-07 12:28:55,212 - __main__ - INFO - [33mDetermining which features from tls and rdap are time dependent[0m
+2023-12-07 12:28:59,342 - __main__ - INFO - [32mSaved possible time dependand features of TLS and RDAP to ../../false_positives/images/relative_freq_histograms.png[0m
+2023-12-07 12:36:13,036 - __main__ - INFO - [34mPerforming feature engineering on benign dataset: ../../floor/benign_cesnet_union_2307.parquet and malign dataset: ../../floor/phishing_2307.parquet[0m
+2023-12-07 12:36:13,517 - __main__ - INFO - [33mDetermining which features from tls and rdap are time dependent[0m
+2023-12-07 12:36:17,607 - __main__ - INFO - [32mSaved possible time dependand features of TLS and RDAP to ../../false_positives/images/relative_freq_histograms.png[0m
+2023-12-07 12:46:20,493 - __main__ - INFO - [34mPerforming feature engineering on benign dataset: ../../floor/benign_cesnet_union_2307.parquet and malign dataset: ../../floor/phishing_2307.parquet[0m
+2023-12-07 12:46:24,056 - __main__ - INFO - [33mDetermining which features from tls and rdap are time dependent[0m
+2023-12-07 12:46:35,887 - __main__ - INFO - [32mSaved possible time dependand features of TLS and RDAP to ../../false_positives/images/relative_freq_histograms.png[0m
+2023-12-07 13:00:33,341 - __main__ - INFO - [34mPerforming feature engineering on benign dataset: ../../floor/benign_cesnet_union_2307.parquet and malign dataset: ../../floor/phishing_2307.parquet[0m
+2023-12-07 13:00:34,550 - __main__ - INFO - [33mDetermining which features from tls and rdap are time dependent[0m
+2023-12-07 13:00:39,643 - __main__ - INFO - [32mSaved possible time dependand features of TLS and RDAP to ../../false_positives/images/relative_freq_histograms.png[0m
+2023-12-07 13:04:20,340 - __main__ - INFO - [34mPerforming feature engineering on benign dataset: ../../floor/benign_cesnet_union_2307.parquet and malign dataset: ../../floor/phishing_2307.parquet[0m
+2023-12-07 13:04:20,871 - __main__ - INFO - [33mDetermining which features from tls and rdap are time dependent[0m
+2023-12-07 13:04:25,350 - __main__ - INFO - [32mSaved possible time dependand features of TLS and RDAP to ../../false_positives/images/relative_freq_histograms.png[0m
+2023-12-07 13:10:41,590 - __main__ - INFO - [34mPerforming feature engineering on benign dataset: ../../floor/benign_cesnet_union_2307.parquet and malign dataset: ../../floor/phishing_2307.parquet[0m
+2023-12-07 13:10:42,212 - __main__ - INFO - [33mDetermining which features from tls and rdap are time dependent[0m
+2023-12-07 13:10:46,591 - __main__ - INFO - [32mSaved possible time dependand features of TLS and RDAP to ../../false_positives/images/relative_freq_histograms.png[0m
+2023-12-07 13:10:46,855 - __main__ - INFO - [32mSaved top 20 feature importances plot to ../../false_positives/images/top_20_feature_importances.png[0m
+2023-12-07 13:12:17,769 - __main__ - INFO - [34mPerforming feature engineering on benign dataset: ../../floor/benign_cesnet_union_2307.parquet and malign dataset: ../../floor/phishing_2307.parquet[0m
+2023-12-07 13:12:18,286 - __main__ - INFO - [33mDetermining which features from tls and rdap are time dependent[0m
+2023-12-07 13:12:23,164 - __main__ - INFO - [32mSaved possible time dependand features of TLS and RDAP to ../../false_positives/images/relative_freq_histograms.png[0m
+2023-12-07 13:12:23,376 - __main__ - INFO - [32mSaved top 20 feature importances plot to ../../false_positives/images/top_20_feature_importances.png[0m
+2023-12-07 13:14:35,037 - __main__ - INFO - [34mPerforming feature engineering on benign dataset: ../../floor/benign_cesnet_union_2307.parquet and malign dataset: ../../floor/phishing_2307.parquet[0m
+2023-12-07 13:14:35,472 - __main__ - INFO - [33mDetermining which features from tls and rdap are time dependent[0m
+2023-12-07 13:14:39,776 - __main__ - INFO - [32mSaved possible time dependand features of TLS and RDAP to ../../false_positives/images/relative_freq_histograms.png[0m
+2023-12-07 13:14:39,991 - __main__ - INFO - [32mSaved top 20 feature importances plot to ../../false_positives/images/top_20_feature_importances.png[0m
+2023-12-07 13:16:56,024 - __main__ - INFO - [34mPerforming feature engineering on benign dataset: ../../floor/benign_cesnet_union_2307.parquet and malign dataset: ../../floor/phishing_2307.parquet[0m
+2023-12-07 13:16:56,468 - __main__ - INFO - [33mDetermining which features from tls and rdap are time dependent[0m
+2023-12-07 13:17:01,057 - __main__ - INFO - [32mSaved possible time dependand features of TLS and RDAP to ../../false_positives/images/relative_freq_histograms.png[0m
+2023-12-07 13:17:01,166 - __main__ - INFO - [32mSaved top 20 feature importances plot to ../../false_positives/images/top_20_feature_importances.png[0m
+2023-12-07 13:17:26,451 - __main__ - INFO - [34mPerforming feature engineering on benign dataset: ../../floor/benign_cesnet_union_2307.parquet and malign dataset: ../../floor/phishing_2307.parquet[0m
+2023-12-07 13:17:26,967 - __main__ - INFO - [33mDetermining which features from tls and rdap are time dependent[0m
+2023-12-07 13:17:31,470 - __main__ - INFO - [32mSaved possible time dependand features of TLS and RDAP to ../../false_positives/images/relative_freq_histograms.png[0m
+2023-12-07 13:17:31,593 - __main__ - INFO - [32mSaved top 20 feature importances plot to ../../false_positives/images/top_20_feature_importances.png[0m
+2023-12-07 13:18:58,276 - __main__ - INFO - [34mPerforming feature engineering on benign dataset: ../../floor/benign_cesnet_union_2307.parquet and malign dataset: ../../floor/phishing_2307.parquet[0m
+2023-12-07 13:18:58,928 - __main__ - INFO - [33mDetermining which features from tls and rdap are time dependent[0m
+2023-12-07 13:19:04,938 - __main__ - INFO - [32mSaved possible time dependand features of TLS and RDAP to ../../false_positives/images/relative_freq_histograms.png[0m
+2023-12-07 13:19:05,585 - __main__ - INFO - [32mSaved top 20 feature importances plot to ../../false_positives/images/top_20_feature_importances.png[0m
+2023-12-07 13:19:57,015 - __main__ - INFO - [34mPerforming feature engineering on benign dataset: ../../floor/benign_cesnet_union_2307.parquet and malign dataset: ../../floor/phishing_2307.parquet[0m
+2023-12-07 13:19:57,464 - __main__ - INFO - [33mDetermining which features from tls and rdap are time dependent[0m
+2023-12-07 13:20:02,271 - __main__ - INFO - [32mSaved possible time dependand features of TLS and RDAP to ../../false_positives/images/relative_freq_histograms.png[0m
+2023-12-07 13:20:02,822 - __main__ - INFO - [32mSaved top 20 feature importances plot to ../../false_positives/images/top_20_feature_importances.png[0m
+2023-12-07 13:21:22,811 - __main__ - INFO - [34mPerforming feature engineering on benign dataset: ../../floor/benign_cesnet_union_2307.parquet and malign dataset: ../../floor/phishing_2307.parquet[0m
+2023-12-07 13:21:23,228 - __main__ - INFO - [33mDetermining which features from tls and rdap are time dependent[0m
+2023-12-07 13:21:27,667 - __main__ - INFO - [32mSaved possible time dependand features of TLS and RDAP to ../../false_positives/images/relative_freq_histograms.png[0m
+2023-12-07 13:21:28,205 - __main__ - INFO - [32mSaved top 20 feature importances plot to ../../false_positives/images/top_20_feature_importances.png[0m
+2023-12-07 13:23:43,085 - __main__ - INFO - [34mPerforming feature engineering on benign dataset: ../../floor/benign_cesnet_union_2307.parquet and malign dataset: ../../floor/phishing_2307.parquet[0m
+2023-12-07 13:23:43,642 - __main__ - INFO - [33mDetermining which features from tls and rdap are time dependent[0m
+2023-12-07 13:23:44,244 - __main__ - INFO - [33mAll possibly time demanding features: {'tls_root_cert_validity_len': 15.475114931041375, 'tls_leaf_cert_validity_len': 15.475114931041375, 'tls_root_cert_lifetime': 15.475114931041375, 'tls_leaf_cert_lifetime': 15.475114931041375, 'ip_mean_average_rtt': 13.144378666234152, 'tls_percentage_crt_with_policies': 15.475114931041375, 'rdap_domain_age': 8.81783402939395, 'rdap_domain_active_time': 8.818535403449484, 'rdap_registration_period': 8.7819900656946}[0m
+2023-12-07 13:23:48,727 - __main__ - INFO - [32mSaved possible time dependand features of TLS and RDAP to ../../false_positives/images/relative_freq_histograms.png[0m
+2023-12-07 13:23:49,298 - __main__ - INFO - [32mSaved top 20 feature importances plot to ../../false_positives/images/top_20_feature_importances.png[0m
+2023-12-07 13:24:43,148 - __main__ - INFO - [34mPerforming feature engineering on benign dataset: ../../floor/benign_cesnet_union_2307.parquet and malign dataset: ../../floor/phishing_2307.parquet[0m
+2023-12-07 13:24:43,606 - __main__ - INFO - [33mDetermining which features from tls and rdap are time dependent[0m
+2023-12-07 13:24:44,083 - __main__ - INFO - [33mFeature: tls_root_cert_validity_len[0m
+2023-12-07 13:24:44,084 - __main__ - INFO - [33mFeature: tls_leaf_cert_validity_len[0m
+2023-12-07 13:24:44,084 - __main__ - INFO - [33mFeature: tls_root_cert_lifetime[0m
+2023-12-07 13:24:44,085 - __main__ - INFO - [33mFeature: tls_leaf_cert_lifetime[0m
+2023-12-07 13:24:44,086 - __main__ - INFO - [33mFeature: ip_mean_average_rtt[0m
+2023-12-07 13:24:44,087 - __main__ - INFO - [33mFeature: tls_percentage_crt_with_policies[0m
+2023-12-07 13:24:44,087 - __main__ - INFO - [33mFeature: rdap_domain_age[0m
+2023-12-07 13:24:44,088 - __main__ - INFO - [33mFeature: rdap_domain_active_time[0m
+2023-12-07 13:24:44,089 - __main__ - INFO - [33mFeature: rdap_registration_period[0m
+2023-12-07 13:24:48,269 - __main__ - INFO - [32mSaved possible time dependand features of TLS and RDAP to ../../false_positives/images/relative_freq_histograms.png[0m
+2023-12-07 13:24:48,833 - __main__ - INFO - [32mSaved top 20 feature importances plot to ../../false_positives/images/top_20_feature_importances.png[0m
+2023-12-07 13:25:18,207 - __main__ - INFO - [34mPerforming feature engineering on benign dataset: ../../floor/benign_cesnet_union_2307.parquet and malign dataset: ../../floor/phishing_2307.parquet[0m
+2023-12-07 13:25:18,676 - __main__ - INFO - [33mDetermining which features from tls and rdap are time dependent[0m
+2023-12-07 13:25:22,674 - __main__ - INFO - [32mSaved possible time dependand features of TLS and RDAP to ../../false_positives/images/relative_freq_histograms.png[0m
+2023-12-07 13:25:23,226 - __main__ - INFO - [32mSaved top 20 feature importances plot to ../../false_positives/images/top_20_feature_importances.png[0m
+2023-12-07 13:26:05,191 - __main__ - INFO - [34mPerforming feature engineering on benign dataset: ../../floor/benign_cesnet_union_2307.parquet and malign dataset: ../../floor/phishing_2307.parquet[0m
+2023-12-07 13:26:05,637 - __main__ - INFO - [33mDetermining which features from tls and rdap are time dependent[0m
+2023-12-07 13:26:09,868 - __main__ - INFO - [32mSaved possible time dependand features of TLS and RDAP to ../../false_positives/images/relative_freq_histograms.png[0m
+2023-12-07 13:26:10,389 - __main__ - INFO - [32mSaved top 20 feature importances plot to ../../false_positives/images/top_20_feature_importances.png[0m
+2023-12-07 13:27:19,916 - __main__ - INFO - [34mPerforming feature engineering on benign dataset: ../../floor/benign_cesnet_union_2307.parquet and malign dataset: ../../floor/phishing_2307.parquet[0m
+2023-12-07 13:27:20,379 - __main__ - INFO - [33mDetermining which features from tls and rdap are time dependent[0m
+2023-12-07 13:27:23,999 - __main__ - INFO - [32mSaved possible time dependand features of TLS and RDAP to ../../false_positives/images/relative_freq_histograms.png[0m
+2023-12-07 13:27:24,001 - __main__ - INFO - [33mChoosing most relevant features based on feature_importances_[0m
+2023-12-07 13:27:24,574 - __main__ - INFO - [32mSaved top 20 feature importances plot to ../../false_positives/images/top_20_feature_importances.png[0m
+2023-12-07 13:30:37,830 - __main__ - INFO - Performing feature engineering on benign dataset: ../../floor/benign_cesnet_union_2307.parquet and malign dataset: ../../floor/phishing_2307.parquet
+2023-12-07 13:30:42,019 - __main__ - INFO - [32mSaved possible time dependand features of TLS and RDAP to ../../false_positives/images/relative_freq_histograms.png[0m
+2023-12-07 13:30:42,020 - __main__ - INFO - [33mChoosing most relevant features based on feature_importances_[0m
+2023-12-07 13:30:42,553 - __main__ - INFO - [32mSaved top 20 feature importances plot to ../../false_positives/images/top_20_feature_importances.png[0m
+2023-12-07 13:31:17,422 - __main__ - INFO - [34mPerforming feature engineering on benign dataset: ../../floor/benign_cesnet_union_2307.parquet and malign dataset: ../../floor/phishing_2307.parquet[0m
+2023-12-07 13:31:21,597 - __main__ - INFO - [32mSaved possible time dependand features of TLS and RDAP to ../../false_positives/images/relative_freq_histograms.png[0m
+2023-12-07 13:31:21,598 - __main__ - INFO - [33mChoosing most relevant features based on feature_importances_[0m
+2023-12-07 13:31:22,098 - __main__ - INFO - [32mSaved top 20 feature importances plot to ../../false_positives/images/top_20_feature_importances.png[0m
+2023-12-07 13:35:05,827 - __main__ - INFO - [34mPerforming feature engineering on benign dataset: ../../floor/benign_cesnet_union_2307.parquet and malign dataset: ../../floor/phishing_2307.parquet[0m
+2023-12-07 13:35:09,777 - __main__ - INFO - [32mSaved possible time dependand features of TLS and RDAP to ../../false_positives/images/relative_freq_histograms.png[0m
+2023-12-07 13:35:09,778 - __main__ - INFO - [33mChoosing most relevant features based on feature_importances_[0m
+2023-12-07 13:35:10,346 - __main__ - INFO - [32mSaved top 20 feature importances plot to ../../false_positives/images/top_20_feature_importances.png[0m
+2023-12-07 13:39:28,911 - __main__ - INFO - [34mPerforming feature engineering on benign dataset: ../../floor/benign_cesnet_union_2307.parquet and malign dataset: ../../floor/phishing_2307.parquet[0m
+2023-12-07 13:39:29,683 - __main__ - INFO - [33mPossibly time-dependent feature: tls_root_cert_validity_len[0m
+2023-12-07 13:39:29,684 - __main__ - INFO - [33mPossibly time-dependent feature: tls_leaf_cert_validity_len[0m
+2023-12-07 13:39:29,685 - __main__ - INFO - [33mPossibly time-dependent feature: tls_root_cert_lifetime[0m
+2023-12-07 13:39:29,686 - __main__ - INFO - [33mPossibly time-dependent feature: tls_leaf_cert_lifetime[0m
+2023-12-07 13:39:29,686 - __main__ - INFO - [33mPossibly time-dependent feature: ip_mean_average_rtt[0m
+2023-12-07 13:39:29,687 - __main__ - INFO - [33mPossibly time-dependent feature: tls_percentage_crt_with_policies[0m
+2023-12-07 13:39:32,539 - __main__ - INFO - [32mSaved possible time-dependent features of TLS and RDAP to ../../false_positives/images/relative_freq_histograms.png[0m
+2023-12-07 13:39:32,541 - __main__ - INFO - [33mChoosing most relevant features based on feature_importances_[0m
+2023-12-07 13:39:33,082 - __main__ - INFO - [32mSaved top 20 feature importances plot to ../../false_positives/images/top_20_feature_importances.png[0m
+2023-12-07 13:42:49,373 - __main__ - INFO - [34mPerforming feature engineering on benign dataset: ../../floor/benign_cesnet_union_2307.parquet and malign dataset: ../../floor/phishing_2307.parquet[0m
+2023-12-07 13:42:50,055 - __main__ - INFO - [33mPossibly time-dependent feature: tls_root_cert_validity_len[0m
+2023-12-07 13:42:50,056 - __main__ - INFO - [33mPossibly time-dependent feature: tls_leaf_cert_validity_len[0m
+2023-12-07 13:42:50,057 - __main__ - INFO - [33mPossibly time-dependent feature: tls_root_cert_lifetime[0m
+2023-12-07 13:42:50,058 - __main__ - INFO - [33mPossibly time-dependent feature: tls_leaf_cert_lifetime[0m
+2023-12-07 13:42:50,059 - __main__ - INFO - [33mPossibly time-dependent feature: ip_mean_average_rtt[0m
+2023-12-07 13:42:50,059 - __main__ - INFO - [33mPossibly time-dependent feature: tls_percentage_crt_with_policies[0m
+2023-12-07 13:42:52,993 - __main__ - INFO - [32mSaved possible time-dependent features of TLS and RDAP to ../../false_positives/images/relative_freq_histograms.png[0m
+2023-12-07 13:42:52,994 - __main__ - INFO - [33mChoosing most relevant features based on feature_importances_[0m
+2023-12-07 13:42:53,515 - __main__ - INFO - [32mSaved top 20 feature importances plot to ../../false_positives/images/top_20_feature_importances.png[0m
+2023-12-07 13:44:57,835 - __main__ - INFO - [34mPerforming feature engineering on benign dataset: ../../floor/benign_cesnet_union_2307.parquet and malign dataset: ../../floor/phishing_2307.parquet[0m
+2023-12-07 13:44:58,653 - __main__ - INFO - [33mPossibly time-dependent feature: tls_root_cert_validity_len[0m
+2023-12-07 13:44:58,654 - __main__ - INFO - [33mPossibly time-dependent feature: tls_leaf_cert_validity_len[0m
+2023-12-07 13:44:58,655 - __main__ - INFO - [33mPossibly time-dependent feature: tls_root_cert_lifetime[0m
+2023-12-07 13:44:58,656 - __main__ - INFO - [33mPossibly time-dependent feature: tls_leaf_cert_lifetime[0m
+2023-12-07 13:44:58,657 - __main__ - INFO - [33mPossibly time-dependent feature: ip_mean_average_rtt[0m
+2023-12-07 13:44:58,658 - __main__ - INFO - [33mPossibly time-dependent feature: tls_percentage_crt_with_policies[0m
+2023-12-07 13:45:02,157 - __main__ - INFO - [32mSaved possible time-dependent features of TLS and RDAP to ../../false_positives/images/relative_freq_histograms.png[0m
+2023-12-07 13:45:02,158 - __main__ - INFO - [33mChoosing most relevant features based on feature_importances_[0m
+2023-12-07 13:45:02,741 - __main__ - INFO - [32mSaved top 20 feature importances plot to ../../false_positives/images/top_20_feature_importances.png[0m
+2023-12-07 13:45:19,358 - __main__ - INFO - [34mPerforming feature engineering on benign dataset: ../../floor/benign_cesnet_union_2307.parquet and malign dataset: ../../floor/phishing_2307.parquet[0m
+2023-12-07 13:45:20,161 - __main__ - INFO - [33mPossibly time-dependent feature: tls_root_cert_validity_len[0m
+2023-12-07 13:45:20,161 - __main__ - INFO - [33mPossibly time-dependent feature: tls_leaf_cert_validity_len[0m
+2023-12-07 13:45:20,162 - __main__ - INFO - [33mPossibly time-dependent feature: tls_root_cert_lifetime[0m
+2023-12-07 13:45:20,163 - __main__ - INFO - [33mPossibly time-dependent feature: tls_leaf_cert_lifetime[0m
+2023-12-07 13:45:20,164 - __main__ - INFO - [33mPossibly time-dependent feature: ip_mean_average_rtt[0m
+2023-12-07 13:45:20,164 - __main__ - INFO - [33mPossibly time-dependent feature: tls_percentage_crt_with_policies[0m
+2023-12-07 13:45:23,296 - __main__ - INFO - [32mSaved possible time-dependent features of TLS and RDAP to ../../false_positives/images/relative_freq_histograms.png[0m
+2023-12-07 13:45:23,297 - __main__ - INFO - [33mChoosing most relevant features based on feature_importances_[0m
+2023-12-07 13:45:23,892 - __main__ - INFO - [32mSaved top 20 feature importances plot to ../../false_positives/images/top_20_feature_importances.png[0m
+2023-12-07 13:46:51,126 - __main__ - INFO - [34mPerforming feature engineering on benign dataset: ../../floor/benign_cesnet_union_2307.parquet and malign dataset: ../../floor/phishing_2307.parquet[0m
+2023-12-07 13:46:55,747 - __main__ - INFO - [32mSaved possible time dependand features of TLS and RDAP to ../../false_positives/images/relative_freq_histograms.png[0m
+2023-12-07 13:46:55,748 - __main__ - INFO - [33mChoosing most relevant features based on feature_importances_[0m
+2023-12-07 13:46:56,265 - __main__ - INFO - [32mSaved top 20 feature importances plot to ../../false_positives/images/top_20_feature_importances.png[0m
+2023-12-07 13:47:52,984 - __main__ - INFO - [34mPerforming feature engineering on benign dataset: ../../floor/benign_cesnet_union_2307.parquet and malign dataset: ../../floor/phishing_2307.parquet[0m
+2023-12-07 13:47:53,881 - __main__ - INFO - [33mPossibly time demanding feature: tls_root_cert_validity_len[0m
+2023-12-07 13:47:53,882 - __main__ - INFO - [33mPossibly time demanding feature: tls_leaf_cert_validity_len[0m
+2023-12-07 13:47:53,883 - __main__ - INFO - [33mPossibly time demanding feature: tls_root_cert_lifetime[0m
+2023-12-07 13:47:53,884 - __main__ - INFO - [33mPossibly time demanding feature: tls_leaf_cert_lifetime[0m
+2023-12-07 13:47:53,885 - __main__ - INFO - [33mPossibly time demanding feature: ip_mean_average_rtt[0m
+2023-12-07 13:47:53,886 - __main__ - INFO - [33mPossibly time demanding feature: tls_percentage_crt_with_policies[0m
+2023-12-07 13:47:53,887 - __main__ - INFO - [33mPossibly time demanding feature: rdap_domain_age[0m
+2023-12-07 13:47:53,888 - __main__ - INFO - [33mPossibly time demanding feature: rdap_domain_active_time[0m
+2023-12-07 13:47:53,889 - __main__ - INFO - [33mPossibly time demanding feature: rdap_registration_period[0m
+2023-12-07 13:47:57,430 - __main__ - INFO - [32mSaved possible time dependand features of TLS and RDAP to ../../false_positives/images/relative_freq_histograms.png[0m
+2023-12-07 13:47:57,431 - __main__ - INFO - [33mChoosing most relevant features based on feature_importances_[0m
+2023-12-07 13:47:57,975 - __main__ - INFO - [32mSaved top 20 feature importances plot to ../../false_positives/images/top_20_feature_importances.png[0m
+2023-12-07 14:00:30,857 - __main__ - INFO - [34mPerforming feature engineering on benign dataset: ../../floor/benign_cesnet_union_2307.parquet and malign dataset: ../../floor/phishing_2307.parquet[0m
+2023-12-07 14:00:31,639 - __main__ - INFO - [33mPossibly time demanding feature: tls_root_cert_validity_len[0m
+2023-12-07 14:00:31,640 - __main__ - INFO - [33mPossibly time demanding feature: tls_leaf_cert_validity_len[0m
+2023-12-07 14:00:31,641 - __main__ - INFO - [33mPossibly time demanding feature: tls_root_cert_lifetime[0m
+2023-12-07 14:00:31,642 - __main__ - INFO - [33mPossibly time demanding feature: tls_leaf_cert_lifetime[0m
+2023-12-07 14:00:31,643 - __main__ - INFO - [33mPossibly time demanding feature: ip_mean_average_rtt[0m
+2023-12-07 14:00:31,644 - __main__ - INFO - [33mPossibly time demanding feature: tls_percentage_crt_with_policies[0m
+2023-12-07 14:00:31,645 - __main__ - INFO - [33mPossibly time demanding feature: rdap_domain_age[0m
+2023-12-07 14:00:31,646 - __main__ - INFO - [33mPossibly time demanding feature: rdap_domain_active_time[0m
+2023-12-07 14:00:31,647 - __main__ - INFO - [33mPossibly time demanding feature: rdap_registration_period[0m
+2023-12-07 14:00:34,867 - __main__ - INFO - [32mSaved possible time dependand features of TLS and RDAP to ../../false_positives/images/relative_freq_histograms.png[0m
+2023-12-07 14:00:34,868 - __main__ - INFO - [33mChoosing most relevant features based on feature_importances_[0m
+2023-12-07 14:00:35,452 - __main__ - INFO - [32mSaved top 20 feature importances plot to ../../false_positives/images/top_20_feature_importances.png[0m
+2023-12-07 14:05:49,149 - __main__ - INFO - [34mPerforming feature engineering on benign dataset: ../../floor/benign_cesnet_union_2307.parquet and malign dataset: ../../floor/phishing_2307.parquet[0m
+2023-12-07 14:05:49,929 - __main__ - INFO - [33mPossibly time demanding feature: tls_root_cert_validity_len[0m
+2023-12-07 14:05:49,930 - __main__ - INFO - [33mPossibly time demanding feature: tls_leaf_cert_validity_len[0m
+2023-12-07 14:05:49,931 - __main__ - INFO - [33mPossibly time demanding feature: tls_root_cert_lifetime[0m
+2023-12-07 14:05:49,932 - __main__ - INFO - [33mPossibly time demanding feature: tls_leaf_cert_lifetime[0m
+2023-12-07 14:05:49,932 - __main__ - INFO - [33mPossibly time demanding feature: ip_mean_average_rtt[0m
+2023-12-07 14:05:49,933 - __main__ - INFO - [33mPossibly time demanding feature: tls_percentage_crt_with_policies[0m
+2023-12-07 14:05:49,933 - __main__ - INFO - [33mPossibly time demanding feature: rdap_domain_age[0m
+2023-12-07 14:05:49,934 - __main__ - INFO - [33mPossibly time demanding feature: rdap_domain_active_time[0m
+2023-12-07 14:05:49,935 - __main__ - INFO - [33mPossibly time demanding feature: rdap_registration_period[0m
+2023-12-07 14:05:53,822 - __main__ - INFO - [32mSaved possible time dependand features of TLS and RDAP to ../../false_positives/images/relative_freq_histograms.png[0m
+2023-12-07 14:05:53,823 - __main__ - INFO - [33mChoosing most relevant features based on feature_importances_[0m
+2023-12-07 14:05:54,411 - __main__ - INFO - [32mSaved top 20 feature importances plot to ../../false_positives/images/top_20_feature_importances.png[0m
+2023-12-07 14:06:54,844 - __main__ - INFO - [34mPerforming feature engineering on benign dataset: ../../floor/benign_cesnet_union_2307.parquet and malign dataset: ../../floor/phishing_2307.parquet[0m
+2023-12-07 14:06:55,676 - __main__ - INFO - [33mPossibly time demanding feature: tls_root_cert_validity_len[0m
+2023-12-07 14:06:55,677 - __main__ - INFO - [33mPossibly time demanding feature: tls_leaf_cert_validity_len[0m
+2023-12-07 14:06:55,678 - __main__ - INFO - [33mPossibly time demanding feature: tls_root_cert_lifetime[0m
+2023-12-07 14:06:55,679 - __main__ - INFO - [33mPossibly time demanding feature: tls_leaf_cert_lifetime[0m
+2023-12-07 14:06:55,680 - __main__ - INFO - [33mPossibly time demanding feature: ip_mean_average_rtt[0m
+2023-12-07 14:06:55,681 - __main__ - INFO - [33mPossibly time demanding feature: tls_percentage_crt_with_policies[0m
+2023-12-07 14:06:55,681 - __main__ - INFO - [33mPossibly time demanding feature: rdap_domain_age[0m
+2023-12-07 14:06:55,682 - __main__ - INFO - [33mPossibly time demanding feature: rdap_domain_active_time[0m
+2023-12-07 14:06:55,683 - __main__ - INFO - [33mPossibly time demanding feature: rdap_registration_period[0m
+2023-12-07 14:06:59,445 - __main__ - INFO - [32mSaved possible time dependand features of TLS and RDAP to ../../false_positives/images/relative_freq_histograms.png[0m
+2023-12-07 14:06:59,446 - __main__ - INFO - [33mChoosing most relevant features based on feature_importances_[0m
+2023-12-07 14:07:00,001 - __main__ - INFO - [32mSaved top 20 feature importances plot to ../../false_positives/images/top_20_feature_importances.png[0m
+2023-12-07 14:10:33,653 - __main__ - INFO - [34mPerforming feature engineering on benign dataset: ../../floor/benign_cesnet_union_2307.parquet and malign dataset: ../../floor/phishing_2307.parquet[0m
+2023-12-07 14:10:34,444 - __main__ - INFO - [33mPossibly time demanding feature: tls_root_cert_validity_len[0m
+2023-12-07 14:10:34,445 - __main__ - INFO - [33mPossibly time demanding feature: tls_leaf_cert_validity_len[0m
+2023-12-07 14:10:34,446 - __main__ - INFO - [33mPossibly time demanding feature: tls_root_cert_lifetime[0m
+2023-12-07 14:10:34,447 - __main__ - INFO - [33mPossibly time demanding feature: tls_leaf_cert_lifetime[0m
+2023-12-07 14:10:34,447 - __main__ - INFO - [33mPossibly time demanding feature: ip_mean_average_rtt[0m
+2023-12-07 14:10:34,448 - __main__ - INFO - [33mPossibly time demanding feature: tls_percentage_crt_with_policies[0m
+2023-12-07 14:10:34,449 - __main__ - INFO - [33mPossibly time demanding feature: rdap_domain_age[0m
+2023-12-07 14:10:34,449 - __main__ - INFO - [33mPossibly time demanding feature: rdap_domain_active_time[0m
+2023-12-07 14:10:34,450 - __main__ - INFO - [33mPossibly time demanding feature: rdap_registration_period[0m
+2023-12-07 14:10:38,244 - __main__ - INFO - [32mSaved possible time dependand features of TLS and RDAP to ../../false_positives/images/relative_freq_histograms.png[0m
+2023-12-07 14:10:38,245 - __main__ - INFO - [33mChoosing most relevant features based on feature_importances_[0m
+2023-12-07 14:10:38,771 - __main__ - INFO - [32mSaved top 20 feature importances plot to ../../false_positives/images/top_20_feature_importances.png[0m
+2023-12-07 14:14:26,760 - __main__ - INFO - [36m==============================[0m
+2023-12-07 14:14:26,762 - __main__ - INFO - [36mPerforming Feature Engineering[0m
+2023-12-07 14:14:26,762 - __main__ - INFO - [36m==============================[0m
+2023-12-07 14:14:26,763 - __main__ - INFO - Benign dataset path: ../../floor/benign_cesnet_union_2307.parquet
+2023-12-07 14:14:26,764 - __main__ - INFO - Malign dataset path: ../../floor/phishing_2307.parquet
+2023-12-07 14:14:27,558 - __main__ - INFO - [33mPossibly time demanding feature: tls_root_cert_validity_len[0m
+2023-12-07 14:14:27,559 - __main__ - INFO - [33mPossibly time demanding feature: tls_leaf_cert_validity_len[0m
+2023-12-07 14:14:27,560 - __main__ - INFO - [33mPossibly time demanding feature: tls_root_cert_lifetime[0m
+2023-12-07 14:14:27,561 - __main__ - INFO - [33mPossibly time demanding feature: tls_leaf_cert_lifetime[0m
+2023-12-07 14:14:27,561 - __main__ - INFO - [33mPossibly time demanding feature: ip_mean_average_rtt[0m
+2023-12-07 14:14:27,562 - __main__ - INFO - [33mPossibly time demanding feature: tls_percentage_crt_with_policies[0m
+2023-12-07 14:14:27,563 - __main__ - INFO - [33mPossibly time demanding feature: rdap_domain_age[0m
+2023-12-07 14:14:27,564 - __main__ - INFO - [33mPossibly time demanding feature: rdap_domain_active_time[0m
+2023-12-07 14:14:27,565 - __main__ - INFO - [33mPossibly time demanding feature: rdap_registration_period[0m
+2023-12-07 14:14:31,110 - __main__ - INFO - [33mChoosing most relevant features based on feature_importances_[0m
+2023-12-07 14:14:31,633 - __main__ - INFO - [36m==============[0m
+2023-12-07 14:14:31,634 - __main__ - INFO - [36mSaving Results[0m
+2023-12-07 14:14:31,635 - __main__ - INFO - [36m==============[0m
+2023-12-07 14:14:31,636 - __main__ - INFO - Saved possible time-dependent features to: ../../false_positives/images/relative_freq_histograms.png
+2023-12-07 14:14:31,636 - __main__ - INFO - Saved top 20 feature importances plot to: ../../false_positives/images/top_20_feature_importances.png
+2023-12-07 14:15:44,316 - __main__ - INFO - [36m==============================[0m
+2023-12-07 14:15:44,317 - __main__ - INFO - [36mPerforming Feature Engineering[0m
+2023-12-07 14:15:44,318 - __main__ - INFO - [36m==============================[0m
+2023-12-07 14:15:44,318 - __main__ - INFO - Benign dataset path: ../../floor/benign_cesnet_union_2307.parquet
+2023-12-07 14:15:44,319 - __main__ - INFO - Malign dataset path: ../../floor/phishing_2307.parquet
+2023-12-07 14:15:45,114 - __main__ - INFO - [33mPossibly time demanding feature: tls_root_cert_validity_len[0m
+2023-12-07 14:15:45,115 - __main__ - INFO - [33mPossibly time demanding feature: tls_leaf_cert_validity_len[0m
+2023-12-07 14:15:45,116 - __main__ - INFO - [33mPossibly time demanding feature: tls_root_cert_lifetime[0m
+2023-12-07 14:15:45,116 - __main__ - INFO - [33mPossibly time demanding feature: tls_leaf_cert_lifetime[0m
+2023-12-07 14:15:45,117 - __main__ - INFO - [33mPossibly time demanding feature: ip_mean_average_rtt[0m
+2023-12-07 14:15:45,117 - __main__ - INFO - [33mPossibly time demanding feature: tls_percentage_crt_with_policies[0m
+2023-12-07 14:15:45,118 - __main__ - INFO - [33mPossibly time demanding feature: rdap_domain_age[0m
+2023-12-07 14:15:45,119 - __main__ - INFO - [33mPossibly time demanding feature: rdap_domain_active_time[0m
+2023-12-07 14:15:45,119 - __main__ - INFO - [33mPossibly time demanding feature: rdap_registration_period[0m
+2023-12-07 14:15:48,846 - __main__ - INFO - [33mChoosing most relevant features based on feature_importances_[0m
+2023-12-07 14:15:49,441 - __main__ - INFO - [36m==============[0m
+2023-12-07 14:15:49,454 - __main__ - INFO - [36mSaving Results[0m
+2023-12-07 14:15:49,455 - __main__ - INFO - [36m==============[0m
+2023-12-07 14:15:49,456 - __main__ - INFO - [32mSaved possible time-dependent features to: ../../false_positives/images/relative_freq_histograms.png[0m
+2023-12-07 14:15:49,457 - __main__ - INFO - [32mSaved top 20 feature importances plot to: ../../false_positives/images/top_20_feature_importances.png[0m
+2023-12-07 14:16:11,477 - __main__ - INFO - [36m==============================[0m
+2023-12-07 14:16:11,478 - __main__ - INFO - [36mPerforming Feature Engineering[0m
+2023-12-07 14:16:11,479 - __main__ - INFO - [36m==============================[0m
+2023-12-07 14:16:11,480 - __main__ - INFO - Benign dataset path: ../../floor/benign_cesnet_union_2307.parquet
+2023-12-07 14:16:11,480 - __main__ - INFO - Malign dataset path: ../../floor/phishing_2307.parquet
+2023-12-07 14:16:12,284 - __main__ - INFO - [33mPossibly time demanding feature: tls_root_cert_validity_len[0m
+2023-12-07 14:16:12,285 - __main__ - INFO - [33mPossibly time demanding feature: tls_leaf_cert_validity_len[0m
+2023-12-07 14:16:12,286 - __main__ - INFO - [33mPossibly time demanding feature: tls_root_cert_lifetime[0m
+2023-12-07 14:16:12,287 - __main__ - INFO - [33mPossibly time demanding feature: tls_leaf_cert_lifetime[0m
+2023-12-07 14:16:12,288 - __main__ - INFO - [33mPossibly time demanding feature: ip_mean_average_rtt[0m
+2023-12-07 14:16:12,288 - __main__ - INFO - [33mPossibly time demanding feature: tls_percentage_crt_with_policies[0m
+2023-12-07 14:16:12,289 - __main__ - INFO - [33mPossibly time demanding feature: rdap_domain_age[0m
+2023-12-07 14:16:12,289 - __main__ - INFO - [33mPossibly time demanding feature: rdap_domain_active_time[0m
+2023-12-07 14:16:12,290 - __main__ - INFO - [33mPossibly time demanding feature: rdap_registration_period[0m
+2023-12-07 14:16:15,720 - __main__ - INFO - [33mChoosing most relevant features based on feature_importances_[0m
+2023-12-07 14:16:16,254 - __main__ - INFO - [36m==============[0m
+2023-12-07 14:16:16,255 - __main__ - INFO - [36mSaving Results[0m
+2023-12-07 14:16:16,257 - __main__ - INFO - [36m==============[0m
+2023-12-07 14:16:16,257 - __main__ - INFO - [32mSaved possible time-dependent features to: ../../false_positives/images/relative_freq_histograms.png[0m
+2023-12-07 14:16:16,258 - __main__ - INFO - [32mSaved top 20 feature importances plot to: ../../false_positives/images/top_20_feature_importances.png[0m
