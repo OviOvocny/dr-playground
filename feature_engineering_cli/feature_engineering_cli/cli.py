@@ -7,12 +7,15 @@ import matplotlib.pyplot as plt
 import logging
 from pyarrow import Table
 from colorama import init, Fore, Style
+from tabulate import tabulate
 import pickle
 import seaborn as sns
 import warnings
 warnings.filterwarnings("ignore", category=FutureWarning, module="pandas.api.types")
 warnings.filterwarnings("ignore", message="is_sparse is deprecated", category=FutureWarning)
 warnings.filterwarnings("ignore", message="is_categorical_dtype is deprecated", category=FutureWarning)
+
+
 
 class FeatureEngineeringCLI:
     def __init__(self, benign_path: str, malign_path: str):
@@ -209,12 +212,102 @@ class FeatureEngineeringCLI:
                          ' ../../false_positives/images/top_20_feature_importances.png', Fore.GREEN))
 
 
+    def explore_data(self, df: pd.DataFrame, dataset_name: str) -> None:
+        self.print_header(f"Exploratory Data Analysis (EDA) - {dataset_name}")
+
+        # Display basic information about the dataset
+        self.logger.info(self.color_log("Basic Info of the Dataset:", Fore.YELLOW))
+        self.logger.info(df.info())
+
+        # Summary statistics of the dataset
+        self.logger.info(self.color_log("Summary Statistics of the Dataset:", Fore.YELLOW))
+        self.logger.info(df.describe())
+
+        # Check for missing values
+        self.logger.info(self.color_log("Missing Values:", Fore.YELLOW))
+        missing_values = df.isnull().sum()
+        missing_values = missing_values[missing_values > 0]  # Filter columns with non-zero missing values
+        # Sort them in descending order
+        missing_values = missing_values.sort_values(ascending=False)
+        if not missing_values.empty:
+            missing_values_table = tabulate(missing_values.reset_index(), headers=[""], tablefmt="plain")
+            # Log the tabulated missing values with count in red
+            lines = missing_values_table.split('\n')
+            self.logger.info(lines[0])  # Log the header line
+            for line in lines[1:]:
+                if line.strip():  # Skip empty lines
+                    column, count = line.rsplit(maxsplit=1)  # Split at the last space
+                    column = column.strip()  # Remove extra spaces
+                    count = count.strip()  # Remove extra spaces
+                    self.logger.info(f"{column.ljust(50)}{self.color_log(count, Fore.RED)}")
+        else:
+            self.logger.info("No missing values found.")
+
+        self.logger.info(self.color_log('\n', Fore.GREEN))
+        constant_features = df.columns[(df.nunique() == 1) & (df.columns != 'label')]
+        self.logger.info(self.color_log("Constant Features (same value for whole dataset):", Fore.YELLOW))
+        for feature in constant_features:
+            self.logger.info(self.color_log(feature, Fore.GREEN))
+
+        #log newline
+        self.logger.info(self.color_log('\n', Fore.GREEN))
+        # Filter numeric columns for outlier detection
+        numerical_columns = df.select_dtypes(include=[np.number]).columns
+
+        # Convert inf values to NaN before operating
+        df[numerical_columns] = df[numerical_columns].replace([np.inf, -np.inf], np.nan)
+
+        # Detect and handle outliers for numerical columns
+        self.logger.info(self.color_log("Detecting Outliers:", Fore.YELLOW))
+        outliers_summary = {}
+        for column in numerical_columns:
+            Q1 = df[column].quantile(0.25)
+            Q3 = df[column].quantile(0.75)
+            IQR = Q3 - Q1
+            outliers = ((df[column] < (Q1 - 1.5 * IQR)) | (df[column] > (Q3 + 1.5 * IQR)))
+            outlier_percentage = outliers.sum() / len(df[column]) * 100  # Calculate outlier percentage
+            outliers_summary[column] = outlier_percentage
+
+        # Print outlier detection summary
+        for column, percentage in outliers_summary.items():
+            self.logger.info(f"Outliers Percentage in {self.color_log(f'{column}: {percentage:.2f}%', Fore.RED)}")
+
+
+    def perform_eda(self) -> None:
+        benign_path = os.path.join(self.DEFAULT_INPUT_DIR, self.benign_path) if self.benign_path else None
+        malign_path = os.path.join(self.DEFAULT_INPUT_DIR, self.malign_path) if self.malign_path else None
+
+        self.logger.info(f'Benign dataset path: {benign_path}')
+        self.logger.info(f'Malign dataset path: {malign_path}')
+
+        # Load the data
+        data = pq.read_table(benign_path)
+        data2 = pq.read_table(malign_path)
+
+        # Drop non-training columns
+        data = self.drop_nontrain(data)
+        data2 = self.drop_nontrain(data2)
+
+        # Convert to pandas DataFrame if needed
+        df1 = data.to_pandas()
+        df2 = data2.to_pandas()
+
+        # Explore Benign and Malign dataset separately
+        self.explore_data(df1, "Benign Dataset")
+        self.explore_data(df2, "Malign Dataset")
+
+
 @click.command()
 @click.option('--benign', '-b', help='Filename of benign dataset')
 @click.option('--malign', '-m', help='Filename of malign dataset')
-def feature_engineering(benign: str, malign: str) -> None:
+@click.option('--eda', '-e', is_flag=True, help='Perform Exploratory Data Analysis')
+def feature_engineering(benign: str, malign: str, eda: bool) -> None:
     fe_cli = FeatureEngineeringCLI(benign, malign)
-    fe_cli.perform_feature_engineering()
+
+    if eda:
+        fe_cli.perform_eda()
+    else:
+        fe_cli.perform_feature_engineering()
 
 if __name__ == '__main__':
     feature_engineering()
