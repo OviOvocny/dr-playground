@@ -11,11 +11,14 @@ from tabulate import tabulate
 import pickle
 import seaborn as sns
 import warnings
+
 warnings.filterwarnings("ignore", category=FutureWarning, module="pandas.api.types")
 warnings.filterwarnings("ignore", message="is_sparse is deprecated", category=FutureWarning)
 warnings.filterwarnings("ignore", message="is_categorical_dtype is deprecated", category=FutureWarning)
+warnings.filterwarnings('ignore', category=UserWarning)
 
 
+init(autoreset=True)
 
 class FeatureEngineeringCLI:
     def __init__(self, benign_path: str, malign_path: str):
@@ -258,7 +261,7 @@ class FeatureEngineeringCLI:
         df[numerical_columns] = df[numerical_columns].replace([np.inf, -np.inf], np.nan)
 
         # Detect and handle outliers for numerical columns
-        self.logger.info(self.color_log("Detecting Outliers:", Fore.YELLOW))
+        self.logger.info(self.color_log("Detecting Outliers [%]:", Fore.YELLOW))
         outliers_summary = {}
         for column in numerical_columns:
             Q1 = df[column].quantile(0.25)
@@ -270,7 +273,7 @@ class FeatureEngineeringCLI:
 
         # Print outlier detection summary
         for column, percentage in outliers_summary.items():
-            self.logger.info(f"Outliers Percentage in {self.color_log(f'{column}: {percentage:.2f}%', Fore.RED)}")
+            self.logger.info(f"Outliers in {self.color_log(f'{column}: {percentage:.2f}%', Fore.RED)}")
 
 
     def perform_eda(self) -> None:
@@ -296,13 +299,33 @@ class FeatureEngineeringCLI:
         self.explore_data(df1, "Benign Dataset")
         self.explore_data(df2, "Malign Dataset")
 
-
 @click.command()
-@click.option('--benign', '-b', help='Filename of benign dataset')
-@click.option('--malign', '-m', help='Filename of malign dataset')
-@click.option('--eda', '-e', is_flag=True, help='Perform Exploratory Data Analysis')
-def feature_engineering(benign: str, malign: str, eda: bool) -> None:
-    fe_cli = FeatureEngineeringCLI(benign, malign)
+@click.option('-eda', is_flag=True, help='Perform Exploratory Data Analysis')
+def feature_engineering(eda: bool) -> None:
+    floor_folder = "../../floor"
+    parquet_files = os.listdir(floor_folder)
+    benign_files = [file for file in parquet_files if file.endswith('.parquet')]
+    malign_files = [file for file in parquet_files if file.endswith('.parquet')]
+
+    print("Choose BENIGN dataset:")
+    print("-"*22)
+    for idx, file in enumerate(benign_files, start=1):
+        print(Fore.GREEN + f"[{idx}]: {file}")
+
+    print(Fore.YELLOW + "Enter the number corresponding to the benign dataset: ", end='')
+    benign_choice = int(input())
+    chosen_benign = benign_files[benign_choice - 1]
+
+    print("Choose MALIGN dataset:")
+    print("-"*22)
+    for idx, file in enumerate(malign_files, start=1):
+        print(Fore.GREEN + f"[{idx}]: {file}")
+
+    print(Fore.YELLOW + "Enter the number corresponding to the malign dataset: ", end='')
+    malign_choice = int(input())
+    chosen_malign = malign_files[malign_choice - 1]
+
+    fe_cli = FeatureEngineeringCLI(benign_path=chosen_benign, malign_path=chosen_malign)
 
     if eda:
         fe_cli.perform_eda()
