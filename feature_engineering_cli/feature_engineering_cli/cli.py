@@ -11,6 +11,12 @@ from tabulate import tabulate
 import pickle
 import seaborn as sns
 import warnings
+from sklearn.feature_selection import VarianceThreshold
+from sklearn.preprocessing import StandardScaler
+from concurrent.futures import ThreadPoolExecutor
+from statsmodels.stats.outliers_influence import variance_inflation_factor
+
+
 
 warnings.filterwarnings("ignore", category=FutureWarning, module="pandas.api.types")
 warnings.filterwarnings("ignore", message="is_sparse is deprecated", category=FutureWarning)
@@ -88,6 +94,35 @@ class FeatureEngineeringCLI:
         """
         fields = [x for x in self.nontraining_fields if x in table.column_names]
         return table.drop(fields)
+    
+    def calculate_vif(self, df: pd.DataFrame):
+        """
+        Calculate Variance Inflation Factor (VIF) for each feature in the DataFrame using parallel processing.
+        """
+        # Replace inf/-inf with NaN and drop rows with NaN values
+        df = df.replace([np.inf, -np.inf], np.nan).dropna()
+
+        # Remove columns with zero variance
+        df = df.loc[:, df.var() != 0]
+
+        # Standardize the DataFrame
+        scaler = StandardScaler()
+        df_scaled = scaler.fit_transform(df)
+
+        vif_data = pd.DataFrame()
+        vif_data["feature"] = df.columns
+
+        # Function to calculate VIF for a single feature
+        def calculate_single_vif(i):
+            return variance_inflation_factor(df_scaled, i)
+
+        # Use ThreadPoolExecutor for parallel processing
+        with ThreadPoolExecutor(max_workers=None) as executor:
+            vif_values = list(executor.map(calculate_single_vif, range(df_scaled.shape[1])))
+
+        vif_data["VIF"] = vif_values
+        return vif_data
+
 
     def get_feature_with_highest_shap(self, shap_values: np.ndarray, dataset: pd.DataFrame, sample_index: int) -> tuple:
         abs_shap_values = np.abs(shap_values[sample_index, :])
@@ -214,6 +249,15 @@ class FeatureEngineeringCLI:
         self.logger.info(self.color_log('Saved top 20 feature importances plot to:'
                          ' ../../false_positives/images/top_20_feature_importances.png', Fore.GREEN))
 
+    def sort_and_color_vif(self, vif_data):
+        # Sort VIF data by VIF values in descending order
+        vif_data = vif_data.sort_values(by='VIF', ascending=False)
+
+        # VIF >= 5: High multicollinearity. The variable is highly correlated with other independent variables and may cause issues in the model.
+        vif_data['VIF'] = vif_data['VIF'].apply(lambda x: f"{Fore.RED}{x:.2f}{Style.RESET_ALL}" if x > 5 else f"{x:.2f}")
+
+        return vif_data
+
 
     def explore_data(self, df: pd.DataFrame, dataset_name: str) -> None:
         self.print_header(f"Exploratory Data Analysis (EDA) - {dataset_name}")
@@ -259,6 +303,38 @@ class FeatureEngineeringCLI:
 
         # Convert inf values to NaN before operating
         df[numerical_columns] = df[numerical_columns].replace([np.inf, -np.inf], np.nan)
+
+
+        # Convert timedelta columns to numeric (e.g., days or seconds)
+        for col in df.select_dtypes(include=['timedelta64']).columns:
+            df[col] = df[col].dt.total_seconds()
+
+        # Ensure all numeric columns are of the same data type (float)
+        numeric_df = df.select_dtypes(include=[np.number]).astype(float)
+
+        # Apply Variance Thresholding to numeric data
+        self.logger.info(self.color_log("Applying Variance Thresholding to Numeric Data:", Fore.YELLOW))
+        threshold = 0.001  # Threshold for variance
+        sel = VarianceThreshold(threshold=threshold)
+        sel.fit(numeric_df)
+        mask = sel.get_support()
+
+        # Identify low variance features in numeric data
+        low_variance_features = numeric_df.columns[~mask]
+        self.logger.info(self.color_log(f"Suggested Low Variance Numeric Features for Review (Threshold = {threshold}):", Fore.YELLOW))
+        for feature in low_variance_features:
+            self.logger.info(self.color_log(feature, Fore.GREEN))
+
+
+        # Calculate VIF for numeric columns
+        self.logger.info(self.color_log("Calculating Variance Inflation Factor (VIF) for Numeric Features:", Fore.YELLOW))
+        numeric_df = df.select_dtypes(include=[np.number])
+        if not numeric_df.empty:
+            vif_data = self.calculate_vif(numeric_df)
+            sorted_and_colored_vif = self.sort_and_color_vif(vif_data)  # Sort and color VIF values
+            self.logger.info(tabulate(sorted_and_colored_vif, headers='keys', tablefmt='pretty'))
+        else:
+            self.logger.info("No numeric features available for VIF calculation.")
 
         # Detect and handle outliers for numerical columns
         self.logger.info(self.color_log("Detecting Outliers [%]:", Fore.YELLOW))
