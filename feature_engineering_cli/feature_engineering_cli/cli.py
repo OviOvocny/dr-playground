@@ -257,9 +257,11 @@ class FeatureEngineeringCLI:
         vif_data['VIF'] = vif_data['VIF'].apply(lambda x: f"{Fore.RED}{x:.2f}{Style.RESET_ALL}" if x > 5 else f"{x:.2f}")
 
         return vif_data
+        
+    def remove_features(self, df: pd.DataFrame, features_to_remove: list) -> pd.DataFrame:
+        return df.drop(columns=features_to_remove, errors='ignore')
 
-
-    def explore_data(self, df: pd.DataFrame, dataset_name: str) -> None:
+    def explore_data(self, df: pd.DataFrame, dataset_name: str) -> list:
         self.print_header(f"Exploratory Data Analysis (EDA) - {dataset_name}")
 
         # Display basic information about the dataset
@@ -327,14 +329,14 @@ class FeatureEngineeringCLI:
 
 
         # Calculate VIF for numeric columns
-        self.logger.info(self.color_log("Calculating Variance Inflation Factor (VIF) for Numeric Features:", Fore.YELLOW))
-        numeric_df = df.select_dtypes(include=[np.number])
-        if not numeric_df.empty:
-            vif_data = self.calculate_vif(numeric_df)
-            sorted_and_colored_vif = self.sort_and_color_vif(vif_data)  # Sort and color VIF values
-            self.logger.info(tabulate(sorted_and_colored_vif, headers='keys', tablefmt='pretty'))
-        else:
-            self.logger.info("No numeric features available for VIF calculation.")
+        # self.logger.info(self.color_log("Calculating Variance Inflation Factor (VIF) for Numeric Features:", Fore.YELLOW))
+        # numeric_df = df.select_dtypes(include=[np.number])
+        # if not numeric_df.empty:
+        #     vif_data = self.calculate_vif(numeric_df)
+        #     sorted_and_colored_vif = self.sort_and_color_vif(vif_data)  # Sort and color VIF values
+        #     self.logger.info(tabulate(sorted_and_colored_vif, headers='keys', tablefmt='pretty'))
+        # else:
+        #     self.logger.info("No numeric features available for VIF calculation.")
 
         # Detect and handle outliers for numerical columns
         self.logger.info(self.color_log("Detecting Outliers [%]:", Fore.YELLOW))
@@ -350,6 +352,9 @@ class FeatureEngineeringCLI:
         # Print outlier detection summary
         for column, percentage in outliers_summary.items():
             self.logger.info(f"Outliers in {self.color_log(f'{column}: {percentage:.2f}%', Fore.RED)}")
+
+        potentially_useless_features = list(constant_features) + list(low_variance_features)
+        return potentially_useless_features
 
 
     def perform_eda(self) -> None:
@@ -372,8 +377,29 @@ class FeatureEngineeringCLI:
         df2 = data2.to_pandas()
 
         # Explore Benign and Malign dataset separately
-        self.explore_data(df1, "Benign Dataset")
-        self.explore_data(df2, "Malign Dataset")
+        benign_potentially_useless = self.explore_data(df1, "Benign Dataset")
+        malign_potentially_useless = self.explore_data(df2, "Malign Dataset")
+
+
+        # Interactive prompt for feature removal
+        response = input(self.color_log("Do you want to remove identified potentially useless features and save new datasets? (yes/no): ", Fore.YELLOW)).strip().lower()
+        if response == 'yes':
+            df1 = self.remove_features(df1, benign_potentially_useless)
+            df2 = self.remove_features(df2, malign_potentially_useless)
+            self.save_modified_datasets(df1, df2)
+
+    def save_modified_datasets(self, df1: pd.DataFrame, df2: pd.DataFrame):
+        # Code to save modified datasets
+        new_benign_path = os.path.join(self.DEFAULT_INPUT_DIR, 'modified_' + self.benign_path)
+        new_malign_path = os.path.join(self.DEFAULT_INPUT_DIR, 'modified_' + self.malign_path)
+        pq.write_table(Table.from_pandas(df1), new_benign_path)
+        pq.write_table(Table.from_pandas(df2), new_malign_path)
+
+        self.print_header("Saving Preprocessed and Cleaned Datasets")
+        self.logger.info(self.color_log(f"Modified benign dataset saved to: {new_benign_path}", Fore.GREEN))
+        self.logger.info(self.color_log(f"Modified malign dataset saved to: {new_malign_path}", Fore.GREEN))
+
+
 
 @click.command()
 @click.option('-eda', is_flag=True, help='Perform Exploratory Data Analysis')
