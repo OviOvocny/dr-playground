@@ -1,7 +1,7 @@
 | Original Collection         | Ground Truth Collection | Falsely Labeled Domains (%) |
 |-------------------------------|-------------------------|-----------------------------|
 | Cesnet Intersect + Thresholding, Suffix Reduction (530k) *** | benign_2312 (462k)         | 12.83%                 |
-| benign Cesnet Union 2307 (486.3k)                       | benign_2310 (432.6k)       | 11.04%                      |
+| benign Cesnet Union 2307 (486.3k)                       | cesnet3_2311 (194.5k)       | 60.00%                      |
 | malware_2310 (88.2k)                                    | malware_2311 (45.6k)       | 48.30%                      |
 | misp_2310 (68.8k)                                       | misp_2311 (68.4k)          | 0.58%                       |
 
