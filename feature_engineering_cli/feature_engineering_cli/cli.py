@@ -12,11 +12,20 @@ import pickle
 import seaborn as sns
 import warnings
 from sklearn.feature_selection import VarianceThreshold
+from scipy.stats import zscore
 from sklearn.preprocessing import StandardScaler
 from concurrent.futures import ThreadPoolExecutor
 from statsmodels.stats.outliers_influence import variance_inflation_factor
+from sklearn.preprocessing import StandardScaler, MinMaxScaler, RobustScaler
+from sklearn.feature_selection import VarianceThreshold, RFE
+from xgboost import XGBClassifier
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.pipeline import Pipeline
+from sklearn.impute import SimpleImputer
 
-
+from sklearn.feature_selection import RFE
+from sklearn.metrics import accuracy_score
+import shap
 
 warnings.filterwarnings("ignore", category=FutureWarning, module="pandas.api.types")
 warnings.filterwarnings("ignore", message="is_sparse is deprecated", category=FutureWarning)
@@ -59,6 +68,47 @@ class FeatureEngineeringCLI:
         self.logger.info(self.color_log(message, Fore.CYAN))
         self.logger.info(self.color_log(header, Fore.CYAN))
 
+    def perform_RFE(self, X_train, y_train, shap_threshold=0.03, n_features_to_select=None):
+
+        # Filter out only numeric columns
+        numeric_columns = X_train.select_dtypes(include=[np.number]).columns
+        X_train_numeric = X_train[numeric_columns]
+
+        # Train the model on numeric data
+        model = XGBClassifier()
+        model.fit(X_train_numeric, y_train)
+
+        # Calculate SHAP values
+        explainer = shap.Explainer(model, X_train_numeric)
+        shap_values = explainer(X_train_numeric)
+
+        # Sum absolute SHAP values for each feature
+        shap_sum = np.abs(shap_values.values).mean(axis=0)
+
+        # Filter features based on SHAP value significance
+        significant_features = [feature for feature, shap_value in zip(X_train_numeric.columns, shap_sum) if shap_value > shap_threshold]
+
+
+        # If n_features_to_select is not set, select a smaller number of significant features
+        if n_features_to_select is None:
+            n_features_to_select = max(5, len(significant_features) // 4)  # Example: Select top 25% of significant features, with a minimum of 5
+
+        # Apply RFE on significant features
+        rfe = RFE(model, n_features_to_select=n_features_to_select)
+        rfe.fit(X_train_numeric[significant_features], y_train)
+
+        # Get features to remove
+        features_to_remove = np.array(significant_features)[~rfe.support_]
+
+        # Log features that could be removed
+        removable_features_log = ', '.join([self.color_log(feature, Fore.RED) for feature in features_to_remove])
+        self.logger.info(f"Removable features calculated by RFE: {removable_features_log}")
+
+
+        return features_to_remove
+
+
+
 
     def configure_logger(self) -> logging.Logger:
         logger = logging.getLogger(__name__)
@@ -87,6 +137,19 @@ class FeatureEngineeringCLI:
         model = pickle.load(open("../../xgboost_model.pickle.dat", "rb"))
         X_train = pickle.load(open("../../X_train.pickle.dat", "rb"))
         return shap_values, model, X_train
+    
+    def load_training_data(self):
+        """
+        Load training features and labels.
+        
+        Returns:
+            X_train (pd.DataFrame): Training features.
+            y_train (pd.Series): Training labels.
+        """
+        # Example: Loading data from pickled files. Adjust this as per your data storage.
+        X_train = pickle.load(open("../../X_train.pickle.dat", "rb"))
+        y_train = pickle.load(open("../../y_train.pickle.dat", "rb"))
+        return X_train, y_train
 
     def drop_nontrain(self, table: Table) -> Table:
         """
@@ -94,6 +157,45 @@ class FeatureEngineeringCLI:
         """
         fields = [x for x in self.nontraining_fields if x in table.column_names]
         return table.drop(fields)
+    
+    def scaler_recommendation(self, df: pd.DataFrame) -> dict:
+        """
+        Recommend scalers for SVM, XGBoost, and CNN based on the dataset characteristics.
+
+        Args:
+        df (pd.DataFrame): The dataset after EDA.
+
+        Returns:
+        dict: Dictionary containing scaler recommendations for SVM, XGBoost, and CNN.
+        """
+        recommendations = {}
+
+        # Check for outliers using Z-score
+        numeric_df = df.select_dtypes(include=[np.number])
+        outliers = np.any(np.abs(zscore(numeric_df)) > 3, axis=1)
+        outlier_proportion = np.mean(outliers)
+
+        # Check for missing values
+        missing_values = df.isnull().any().sum()
+
+        # Recommendations for SVM
+        if outlier_proportion > 0.05 or missing_values > 0:
+            recommendations['svm'] = 'RobustScaler'
+        else:
+            recommendations['svm'] = 'StandardScaler'
+
+        # Recommendations for XGBoost
+        # XGBoost is less sensitive to the scale of data
+        recommendations['xgboost'] = 'MinMaxScaler'
+
+        # Recommendations for CNN
+        # Assuming the data is not image data as it's not the typical use case for EDA
+        if outlier_proportion > 0.05:
+            recommendations['cnn'] = 'RobustScaler'
+        else:
+            recommendations['cnn'] = 'StandardScaler'
+
+        return recommendations
     
     def calculate_vif(self, df: pd.DataFrame):
         """
@@ -139,6 +241,15 @@ class FeatureEngineeringCLI:
         malign_path = os.path.join(self.DEFAULT_INPUT_DIR, self.malign_path) if self.malign_path else None
         #load shap values, model and X_train
         shap_values, model, X_train = self.load_pickled_data()
+        X_train, y_train = self.load_training_data()
+
+        # Performing Recursive Feature Elimination (RFE)
+        self.print_header("Performing Recursive Feature Elimination (RFE)")
+        removable_features = self.perform_RFE(X_train, y_train)
+        for feature in removable_features:
+            formatted_feature = self.color_log(feature, Fore.YELLOW)
+            self.logger.info(f"{formatted_feature}")
+
         
         self.print_header("Performing Feature Engineering")
         self.logger.info(f'Benign dataset path: {benign_path}')
@@ -260,6 +371,7 @@ class FeatureEngineeringCLI:
         
     def remove_features(self, df: pd.DataFrame, features_to_remove: list) -> pd.DataFrame:
         return df.drop(columns=features_to_remove, errors='ignore')
+    
 
     def explore_data(self, df: pd.DataFrame, dataset_name: str) -> list:
         self.print_header(f"Exploratory Data Analysis (EDA) - {dataset_name}")
@@ -295,6 +407,7 @@ class FeatureEngineeringCLI:
         self.logger.info(self.color_log('\n', Fore.GREEN))
         constant_features = df.columns[(df.nunique() == 1) & (df.columns != 'label')]
         self.logger.info(self.color_log("Constant Features (same value for whole dataset):", Fore.YELLOW))
+    
         for feature in constant_features:
             self.logger.info(self.color_log(feature, Fore.GREEN))
 
@@ -326,6 +439,8 @@ class FeatureEngineeringCLI:
         self.logger.info(self.color_log(f"Suggested Low Variance Numeric Features for Review (Threshold = {threshold}):", Fore.YELLOW))
         for feature in low_variance_features:
             self.logger.info(self.color_log(feature, Fore.GREEN))
+        self.logger.info(self.color_log('\n', Fore.GREEN))
+
 
 
         # Calculate VIF for numeric columns
@@ -352,6 +467,18 @@ class FeatureEngineeringCLI:
         # Print outlier detection summary
         for column, percentage in outliers_summary.items():
             self.logger.info(f"Outliers in {self.color_log(f'{column}: {percentage:.2f}%', Fore.RED)}")
+        self.logger.info(self.color_log('\n', Fore.RED))
+
+        #get scaler recommendation
+        print(Fore.YELLOW + "Get Scaler recommendation based on Data Statistics: ", end='\n')
+        
+        scaler_recommendations = self.scaler_recommendation(df)
+        for method, scaler in scaler_recommendations.items():
+            message = f"{method}: {scaler}"
+            self.logger.info(self.color_log(message, Fore.GREEN))
+        self.logger.info(self.color_log('\n', Fore.GREEN))
+
+
 
         potentially_useless_features = list(constant_features) + list(low_variance_features)
         return potentially_useless_features
@@ -380,12 +507,28 @@ class FeatureEngineeringCLI:
         benign_potentially_useless = self.explore_data(df1, "Benign Dataset")
         malign_potentially_useless = self.explore_data(df2, "Malign Dataset")
 
+        response = input(self.color_log("Do you want to implement the mentioned suggestions (removal of potentially useless features and outliers)? (yes/no): ", Fore.YELLOW)).strip().lower()
 
-        # Interactive prompt for feature removal
-        response = input(self.color_log("Do you want to remove identified potentially useless features and save new datasets? (yes/no): ", Fore.YELLOW)).strip().lower()
         if response == 'yes':
+            # Code for removing potentially useless features
             df1 = self.remove_features(df1, benign_potentially_useless)
             df2 = self.remove_features(df2, malign_potentially_useless)
+
+            # Code for removing outliers
+            for df in [df1, df2]:  # Applying to both benign and malign datasets
+                for column in df.select_dtypes(include=[np.number]).columns:
+                    mean_val = df[column].mean()
+                    std_val = df[column].std()
+                    min_val = df[column].min()
+                    max_val = df[column].max()
+
+                    # Check for outliers and remove them
+                    if (mean_val - 2 * std_val) > min_val or (mean_val + 2 * std_val) < max_val:
+                        outlier_index = df[(df[column] < (mean_val - 2 * std_val)) | (df[column] > (mean_val + 2 * std_val))].index
+                        df.drop(outlier_index, inplace=True)
+                        self.logger.info(f"Removed outliers from column {column}.")
+
+            # Code to save modified datasets
             self.save_modified_datasets(df1, df2)
 
     def save_modified_datasets(self, df1: pd.DataFrame, df2: pd.DataFrame):
