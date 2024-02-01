@@ -26,4 +26,4 @@ nufing
 ### geo_
 
 ``countries_hash`` - one-hot encoding \
-``continent_hash`` - one-hot encoding
+``continent_hash`` - one-hot encoding (only 20 unique values)

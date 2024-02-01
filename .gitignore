@@ -17,3 +17,7 @@ false_positives/*.pdf
 false_positives/force_plots/*.pdf
 false_positives/waterfall_plots/*.pdf
 *.pickle.dat
+feature_engineering_cli/feature_engineering_cli/datasets/malware_dataset.pickle
+
+domain_datafile.trapcap.*
+filtered_domain_datafile.trapcap.*
