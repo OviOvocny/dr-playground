@@ -1,36 +1,49 @@
-import click
+# Standard library imports
 import os
-import pyarrow.parquet as pq
-import pandas as pd
-import numpy as np
-import matplotlib.pyplot as plt
+import datetime
 import logging
-from pyarrow import Table
-from colorama import init, Fore, Style
-from tabulate import tabulate
 import pickle
-import seaborn as sns
 import warnings
-from sklearn.feature_selection import VarianceThreshold
-from scipy.stats import zscore
-from sklearn.preprocessing import StandardScaler
 from concurrent.futures import ThreadPoolExecutor
-from statsmodels.stats.outliers_influence import variance_inflation_factor
-from sklearn.preprocessing import StandardScaler, MinMaxScaler, RobustScaler
+
+# Third-party imports for data handling and computation
+import numpy as np
+import pandas as pd
+import pyarrow as pa
+import pyarrow.parquet as pq
+from pyarrow import Table
+from pandas.core.dtypes import common as com
+from pandas import DataFrame
+
+# Visualization libraries
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+# Machine learning and feature selection libraries
+from sklearn.model_selection import train_test_split
 from sklearn.feature_selection import VarianceThreshold, RFE
-from xgboost import XGBClassifier
+from sklearn.preprocessing import StandardScaler, MinMaxScaler, RobustScaler
 from sklearn.ensemble import RandomForestClassifier
+from sklearn.metrics import accuracy_score
 from sklearn.pipeline import Pipeline
 from sklearn.impute import SimpleImputer
-
-from sklearn.feature_selection import RFE
-from sklearn.metrics import accuracy_score
+from xgboost import XGBClassifier
 import shap
+from scipy.stats import zscore
+from statsmodels.stats.outliers_influence import variance_inflation_factor
 
+# Other utilities
+import click
+from colorama import init, Fore, Style
+from tabulate import tabulate
+import torch
+
+# Suppress specific warnings
 warnings.filterwarnings("ignore", category=FutureWarning, module="pandas.api.types")
 warnings.filterwarnings("ignore", message="is_sparse is deprecated", category=FutureWarning)
 warnings.filterwarnings("ignore", message="is_categorical_dtype is deprecated", category=FutureWarning)
 warnings.filterwarnings('ignore', category=UserWarning)
+
 
 
 init(autoreset=True)
@@ -40,7 +53,7 @@ class FeatureEngineeringCLI:
         self.benign_path = benign_path
         self.malign_path = malign_path
         self.logger = self.configure_logger()
-        self.DEFAULT_INPUT_DIR = "../../floor"
+        self.DEFAULT_INPUT_DIR = "../../floor/inputs-for-petr"
         self.nontraining_fields = [
             "dns_evaluated_on",
             "rdap_evaluated_on",
@@ -106,7 +119,6 @@ class FeatureEngineeringCLI:
 
 
         return features_to_remove
-
 
 
 
@@ -190,40 +202,43 @@ class FeatureEngineeringCLI:
 
         # Recommendations for CNN
         # Assuming the data is not image data as it's not the typical use case for EDA
-        if outlier_proportion > 0.05:
-            recommendations['cnn'] = 'RobustScaler'
-        else:
-            recommendations['cnn'] = 'StandardScaler'
+        
+        #using the sigmoid function to map values from an arbitrary range to the range [0, 1]
+        recommendations['cnn'] = 'MinMaxScaler + Sigmoid'
 
         return recommendations
     
-    def calculate_vif(self, df: pd.DataFrame):
-        """
-        Calculate Variance Inflation Factor (VIF) for each feature in the DataFrame using parallel processing.
-        """
-        # Replace inf/-inf with NaN and drop rows with NaN values
-        df = df.replace([np.inf, -np.inf], np.nan).dropna()
 
-        # Remove columns with zero variance
-        df = df.loc[:, df.var() != 0]
+    def apply_scaling(self, df: pd.DataFrame, scaler_type: str) -> pd.DataFrame:
+        numeric_df = df.select_dtypes(include=[np.number])
 
-        # Standardize the DataFrame
-        scaler = StandardScaler()
-        df_scaled = scaler.fit_transform(df)
+        if scaler_type == 'StandardScaler':
+            scaler = StandardScaler()
+            scaled_data = scaler.fit_transform(numeric_df)
+        elif scaler_type == 'MinMaxScaler':
+            scaler = MinMaxScaler()
+            scaled_data = scaler.fit_transform(numeric_df)
+        elif scaler_type == 'RobustScaler':
+            scaler = RobustScaler()
+            scaled_data = scaler.fit_transform(numeric_df)
+        elif scaler_type == 'MinMaxScaler + Sigmoid':
+            scaler = MinMaxScaler()
+            scaled_data = scaler.fit_transform(numeric_df)
+            # Apply sigmoid scaling
+            scaled_data = 1 / (1 + np.exp(-scaled_data))
+        else:
+            raise ValueError(f"Unsupported scaler type: {scaler_type}")
 
-        vif_data = pd.DataFrame()
-        vif_data["feature"] = df.columns
+        # Update the DataFrame with scaled data
+        scaled_df = pd.DataFrame(scaled_data, columns=numeric_df.columns, index=df.index)
 
-        # Function to calculate VIF for a single feature
-        def calculate_single_vif(i):
-            return variance_inflation_factor(df_scaled, i)
+        # Combine scaled numeric columns with non-numeric data
+        for col in df.columns:
+            if col not in numeric_df.columns:
+                scaled_df[col] = df[col]
 
-        # Use ThreadPoolExecutor for parallel processing
-        with ThreadPoolExecutor(max_workers=None) as executor:
-            vif_values = list(executor.map(calculate_single_vif, range(df_scaled.shape[1])))
+        return scaled_df
 
-        vif_data["VIF"] = vif_values
-        return vif_data
 
 
     def get_feature_with_highest_shap(self, shap_values: np.ndarray, dataset: pd.DataFrame, sample_index: int) -> tuple:
@@ -257,13 +272,19 @@ class FeatureEngineeringCLI:
         data = pq.read_table(benign_path)
         data2 = pq.read_table(malign_path)
 
+        benign_domain_names = data['domain_name']
+        malign_domain_names = data2['domain_name']
+
         # Drop non-training columns
         data = self.drop_nontrain(data)
         data2 = self.drop_nontrain(data2)
+        data = data.drop(columns=['domain_name'])
+        data2 = data2.drop(columns=['domain_name'])
 
         # Convert to pandas DataFrame if needed
         df1 = data.to_pandas()
         df2 = data2.to_pandas()
+
 
         # Calculate ratio of benign to phishing for features containing 'tls'
         features_with_validity_len = [col for col in df1.columns if 'validity' in col]
@@ -372,6 +393,7 @@ class FeatureEngineeringCLI:
     def remove_features(self, df: pd.DataFrame, features_to_remove: list) -> pd.DataFrame:
         return df.drop(columns=features_to_remove, errors='ignore')
     
+    
 
     def explore_data(self, df: pd.DataFrame, dataset_name: str) -> list:
         self.print_header(f"Exploratory Data Analysis (EDA) - {dataset_name}")
@@ -383,6 +405,26 @@ class FeatureEngineeringCLI:
         # Summary statistics of the dataset
         self.logger.info(self.color_log("Summary Statistics of the Dataset:", Fore.YELLOW))
         self.logger.info(df.describe())
+
+        #UNIQUE VALUES OF CATEGORICAL FEATURES
+        # self.logger.info(self.color_log("Number of unique values in lex_tld_hash:", Fore.YELLOW))
+        # self.logger.info(df['lex_tld_hash'].nunique())
+
+        # self.logger.info(self.color_log("Number of unique values in rdap_registrar_name_hash:", Fore.YELLOW))
+        # self.logger.info(df['rdap_registrar_name_hash'].nunique())
+
+        # self.logger.info(self.color_log("Number of unique values in tls_root_authority_hash:", Fore.YELLOW))
+        # self.logger.info(df['tls_root_authority_hash'].nunique())
+
+        # self.logger.info(self.color_log("Number of unique values in tls_leaf_authority_hash:", Fore.YELLOW))
+        # self.logger.info(df['tls_leaf_authority_hash'].nunique())
+
+        # self.logger.info(self.color_log("Number of unique values in geo_countries_hash:", Fore.YELLOW))
+        # self.logger.info(df['geo_countries_hash'].nunique())
+
+        # self.logger.info(self.color_log("Number of unique values in geo_continent_hash:", Fore.YELLOW))
+        # self.logger.info(df['geo_continent_hash'].nunique())
+
 
         # Check for missing values
         self.logger.info(self.color_log("Missing Values:", Fore.YELLOW))
@@ -416,6 +458,7 @@ class FeatureEngineeringCLI:
         # Filter numeric columns for outlier detection
         numerical_columns = df.select_dtypes(include=[np.number]).columns
 
+
         # Convert inf values to NaN before operating
         df[numerical_columns] = df[numerical_columns].replace([np.inf, -np.inf], np.nan)
 
@@ -441,17 +484,6 @@ class FeatureEngineeringCLI:
             self.logger.info(self.color_log(feature, Fore.GREEN))
         self.logger.info(self.color_log('\n', Fore.GREEN))
 
-
-
-        # Calculate VIF for numeric columns
-        # self.logger.info(self.color_log("Calculating Variance Inflation Factor (VIF) for Numeric Features:", Fore.YELLOW))
-        # numeric_df = df.select_dtypes(include=[np.number])
-        # if not numeric_df.empty:
-        #     vif_data = self.calculate_vif(numeric_df)
-        #     sorted_and_colored_vif = self.sort_and_color_vif(vif_data)  # Sort and color VIF values
-        #     self.logger.info(tabulate(sorted_and_colored_vif, headers='keys', tablefmt='pretty'))
-        # else:
-        #     self.logger.info("No numeric features available for VIF calculation.")
 
         # Detect and handle outliers for numerical columns
         self.logger.info(self.color_log("Detecting Outliers [%]:", Fore.YELLOW))
@@ -482,98 +514,211 @@ class FeatureEngineeringCLI:
 
         potentially_useless_features = list(constant_features) + list(low_variance_features)
         return potentially_useless_features
+    
+
+    def cast_timestamp(df: DataFrame):
+        for col in df.columns:
+            if com.is_timedelta64_dtype(df[col]):
+                df[col] = df[col].dt.total_seconds()  # This converts timedelta to float (seconds)
+            elif com.is_datetime64_any_dtype(df[col]):
+                df[col] = df[col].astype(np.int64) // 10**9  # Converts datetime64 to Unix timestamp (seconds)
+
+        return df
+
+    def perform_eda(self, model=None, apply_scaling=False) -> None:
+            benign_path = os.path.join(self.DEFAULT_INPUT_DIR, self.benign_path) if self.benign_path else None
+            malign_path = os.path.join(self.DEFAULT_INPUT_DIR, self.malign_path) if self.malign_path else None
+            
+
+            self.logger.info(f'Benign dataset path: {benign_path}')
+            self.logger.info(f'Malign dataset path: {malign_path}')
+
+            # Load the data
+            benign_data = pq.read_table(benign_path)
+            malign_data = pq.read_table(malign_path)
+
+            # Drop non-training columns and realign schemas
+            benign_data = self.drop_nontrain(benign_data)
+            malign_data = self.drop_nontrain(malign_data)
+            benign_data = benign_data.cast(malign_data.schema)
+
+            # Concatenate tables and convert to pandas DataFrame
+            combined_data = pa.concat_tables([benign_data, malign_data])
+            combined_df = combined_data.to_pandas()
+
+            # Separate labels and features
+            class_map = {"benign_2310:unknown": 0, "misp_2310:phishing": 1}
+            labels = combined_df['label'].apply(lambda x: class_map[x])
+            features = combined_df.drop('label', axis=1)
+
+            # Process timestamps
+            for col in features.columns:
+                if com.is_timedelta64_dtype(features[col]):
+                    features[col] = features[col].dt.total_seconds()
+                elif com.is_datetime64_any_dtype(features[col]):
+                    features[col] = features[col].astype(np.int64) // 10**9
+
+            # Convert bool columns to float
+            for column in features.columns:
+                if features[column].dtype == 'bool':
+                    features[column] = features[column].astype('float64')
+
+            features = features.drop(features.columns[0], axis=1)
+
+            # Handling missing values in features
+            features.fillna(-1, inplace=True)
+
+            potentially_useless = self.explore_data(combined_df, "Combined Dataset")
+
+            response = input(self.color_log("Do you want to implement the mentioned suggestions (removal of potentially useless features and outliers)? (yes/no): ", Fore.YELLOW)).strip().lower()
+
+            if response == 'yes':
+                # Remove potentially useless features
+                features = self.remove_features(features, potentially_useless)
+                #drop those same labels
+                labels = self.remove_features(labels, potentially_useless)
+
+                for column in features.select_dtypes(include=[np.number]).columns:
+                    # Saving the original length of the dataframe for later comparison
+                    original_len = len(features)
+
+                    # Calculating the mean and standard deviation of the current column
+                    mean_val = features[column].mean()
+                    std_val = features[column].std()
+
+                    # Defining a multiplier for standard deviation to identify outliers
+                    std_multiplier = 8
+
+                    # Outliers are defined as values that are more than 'std_multiplier' standard deviations away from the mean
+                    is_outlier = (features[column] < (mean_val - std_multiplier * std_val)) | \
+                                (features[column] > (mean_val + std_multiplier * std_val))
+                    outlier_index = features[is_outlier].index
+
+                    # Removing the identified outliers from the 'features' and 'labels' dataframes
+                    features.drop(outlier_index, inplace=True)
+                    labels.drop(outlier_index, inplace=True)
+
+                    # Calculating the number of rows removed
+                    removed_count = original_len - len(features)
+                    self.logger.info(f"Outliers removed from {column}: {removed_count} rows")
+
+            
+                # for column in features.select_dtypes(include=[np.number]).columns:
+                #     original_len = len(features)
+                    
+                #     # Calculate Q1, Q3, and IQR
+                #     Q1 = features[column].quantile(0.25)
+                #     Q3 = features[column].quantile(0.75)
+                #     IQR = Q3 - Q1
+
+                #     # Define the outlier boundaries
+                #     lower_bound = Q1 - 1.5 * IQR
+                #     upper_bound = Q3 + 1.5 * IQR
+
+                #     # Find outlier indices
+                #     outlier_index = features[(features[column] < lower_bound) | (features[column] > upper_bound)].index
+                    
+                #     # Remove outliers
+                #     features.drop(outlier_index, inplace=True)
+                #     labels.drop(outlier_index, inplace=True)  # Also remove corresponding labels
+
+                #     removed_count = original_len - len(features)
+                #     self.logger.info(f"Outliers removed from {column}: {removed_count} rows")
+
+                # self.logger.info(self.color_log("Outlier Removal Completed for Combined Dataset\n", Fore.GREEN))
+                self.logger.info(self.color_log("Outlier Removal Completed for Combined Dataset\n", Fore.GREEN))
 
 
-    def perform_eda(self) -> None:
-        benign_path = os.path.join(self.DEFAULT_INPUT_DIR, self.benign_path) if self.benign_path else None
-        malign_path = os.path.join(self.DEFAULT_INPUT_DIR, self.malign_path) if self.malign_path else None
+                # Apply scaling if requested
+                if apply_scaling:
+                    scaler_recommendations = self.scaler_recommendation(features)
+                    scaler_type = scaler_recommendations.get(model.lower(), 'StandardScaler')
+                    self.logger.info(self.color_log(f"Applying {scaler_type} scaling to the features.", Fore.YELLOW))
+                    features = self.apply_scaling(features, scaler_type)
+                    self.logger.info(self.color_log("Scaling applied to the features\n", Fore.GREEN))
 
-        self.logger.info(f'Benign dataset path: {benign_path}')
-        self.logger.info(f'Malign dataset path: {malign_path}')
+            # Merge the labels back into features for saving
+            features['label'] = labels
 
-        # Load the data
-        data = pq.read_table(benign_path)
-        data2 = pq.read_table(malign_path)
+            # Save the modified dataset as a Parquet file
+            modified_data = pa.Table.from_pandas(features)
+            output_path = os.path.join(self.DEFAULT_INPUT_DIR, 'modified_dataset.parquet')
+            pq.write_table(modified_data, output_path)
+            self.logger.info(self.color_log(f"Modified combined dataset saved to {output_path}", Fore.GREEN))
 
-        # Drop non-training columns
-        data = self.drop_nontrain(data)
-        data2 = self.drop_nontrain(data2)
+            self.logger.info(self.color_log("Head of modified combined dataset:", Fore.YELLOW))
+            self.logger.info(features)
 
-        # Convert to pandas DataFrame if needed
-        df1 = data.to_pandas()
-        df2 = data2.to_pandas()
-
-        # Explore Benign and Malign dataset separately
-        benign_potentially_useless = self.explore_data(df1, "Benign Dataset")
-        malign_potentially_useless = self.explore_data(df2, "Malign Dataset")
-
-        response = input(self.color_log("Do you want to implement the mentioned suggestions (removal of potentially useless features and outliers)? (yes/no): ", Fore.YELLOW)).strip().lower()
-
-        if response == 'yes':
-            # Code for removing potentially useless features
-            df1 = self.remove_features(df1, benign_potentially_useless)
-            df2 = self.remove_features(df2, malign_potentially_useless)
-
-            # Code for removing outliers
-            for df in [df1, df2]:  # Applying to both benign and malign datasets
-                for column in df.select_dtypes(include=[np.number]).columns:
-                    mean_val = df[column].mean()
-                    std_val = df[column].std()
-                    min_val = df[column].min()
-                    max_val = df[column].max()
-
-                    # Check for outliers and remove them
-                    if (mean_val - 2 * std_val) > min_val or (mean_val + 2 * std_val) < max_val:
-                        outlier_index = df[(df[column] < (mean_val - 2 * std_val)) | (df[column] > (mean_val + 2 * std_val))].index
-                        df.drop(outlier_index, inplace=True)
-                        self.logger.info(f"Removed outliers from column {column}.")
-
-            # Code to save modified datasets
-            self.save_modified_datasets(df1, df2)
-
-    def save_modified_datasets(self, df1: pd.DataFrame, df2: pd.DataFrame):
-        # Code to save modified datasets
-        new_benign_path = os.path.join(self.DEFAULT_INPUT_DIR, 'modified_' + self.benign_path)
-        new_malign_path = os.path.join(self.DEFAULT_INPUT_DIR, 'modified_' + self.malign_path)
-        pq.write_table(Table.from_pandas(df1), new_benign_path)
-        pq.write_table(Table.from_pandas(df2), new_malign_path)
-
-        self.print_header("Saving Preprocessed and Cleaned Datasets")
-        self.logger.info(self.color_log(f"Modified benign dataset saved to: {new_benign_path}", Fore.GREEN))
-        self.logger.info(self.color_log(f"Modified malign dataset saved to: {new_malign_path}", Fore.GREEN))
+            return torch.tensor(features.values).float(), torch.tensor(labels.values).float()
 
 
+def choose_dataset(files, dataset_type):
+    print(f"Choose {dataset_type.upper()} dataset:")
+    print("-" * 22)
+    for idx, file in enumerate(files, start=1):
+        print(Fore.GREEN + f"[{idx}]: {file}")
+
+    choice = int(input(Fore.YELLOW + f"Enter the number corresponding to the {dataset_type} dataset: "))
+    return files[choice - 1]
+
+def display_dataset_subset(x_train, y_train, dataset_name, dimension, subset_size=10):
+    subset_features = pd.DataFrame(x_train[:subset_size].numpy(), columns=[f"Feature_{i}" for i in range(x_train.shape[1])])
+    subset_labels = pd.DataFrame(y_train[:subset_size].numpy(), columns=['Label'])
+
+    print("\nDataset Subset:")
+    print(f"Name: {dataset_name}")
+    print("Features:")
+    print(subset_features)
+    print("Labels:")
+    print(subset_labels)
+    print("Dimension:", dimension)
 
 @click.command()
 @click.option('-eda', is_flag=True, help='Perform Exploratory Data Analysis')
-def feature_engineering(eda: bool) -> None:
-    floor_folder = "../../floor"
+@click.option('--model', type=click.Choice(['svm', 'xgboost', 'adaboost', 'cnn'], case_sensitive=False), default=None, help='Classification model to use')
+@click.option('--scaling', is_flag=True, help='Scale data based on model')
+def feature_engineering(eda: bool, model: str, scaling: bool):
+    floor_folder = "../../floor/inputs-for-petr"
     parquet_files = os.listdir(floor_folder)
-    benign_files = [file for file in parquet_files if file.endswith('.parquet')]
-    malign_files = [file for file in parquet_files if file.endswith('.parquet')]
+    dataset_files = [file for file in parquet_files if file.endswith('.parquet')]
 
-    print("Choose BENIGN dataset:")
-    print("-"*22)
-    for idx, file in enumerate(benign_files, start=1):
-        print(Fore.GREEN + f"[{idx}]: {file}")
-
-    print(Fore.YELLOW + "Enter the number corresponding to the benign dataset: ", end='')
-    benign_choice = int(input())
-    chosen_benign = benign_files[benign_choice - 1]
-
-    print("Choose MALIGN dataset:")
-    print("-"*22)
-    for idx, file in enumerate(malign_files, start=1):
-        print(Fore.GREEN + f"[{idx}]: {file}")
-
-    print(Fore.YELLOW + "Enter the number corresponding to the malign dataset: ", end='')
-    malign_choice = int(input())
-    chosen_malign = malign_files[malign_choice - 1]
+    chosen_benign = choose_dataset(dataset_files, "benign")
+    chosen_malign = choose_dataset(dataset_files, "malign")
 
     fe_cli = FeatureEngineeringCLI(benign_path=chosen_benign, malign_path=chosen_malign)
 
     if eda:
-        fe_cli.perform_eda()
+        features, labels = fe_cli.perform_eda(model, scaling)
+        current_date = datetime.datetime.now().strftime("%Y-%m-%d")
+        benign_name = ''.join(chosen_benign.split('_')[:2])
+        malign_name = ''.join(chosen_malign.split('_')[:2])
+        dataset_name = f"dataset_{benign_name}_{malign_name}_{current_date}"
+
+        dataset = {
+            'name': dataset_name,
+            'features': features,
+            'labels': labels,
+            'dimension': features.shape[1]
+        }
+
+        directory = 'datasets'
+        file_path = os.path.join(directory, 'malware_dataset.pickle')
+        
+        if not os.path.exists(directory):
+            os.makedirs(directory)
+        
+        with open(file_path, 'wb') as file:
+            pickle.dump(dataset, file, protocol=pickle.HIGHEST_PROTOCOL)
+
+        x_train, x_test, y_train, y_test = train_test_split(
+            dataset['features'],
+            dataset['labels'],
+            test_size=0.2,
+            random_state=42
+        )
+
+        display_dataset_subset(x_train, y_train, dataset['name'], dataset['dimension'])
+
     else:
         fe_cli.perform_feature_engineering()
 
