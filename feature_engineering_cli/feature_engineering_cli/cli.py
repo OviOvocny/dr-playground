@@ -529,9 +529,8 @@ class FeatureEngineeringCLI:
             benign_path = os.path.join(self.DEFAULT_INPUT_DIR, self.benign_path) if self.benign_path else None
             malign_path = os.path.join(self.DEFAULT_INPUT_DIR, self.malign_path) if self.malign_path else None
             
-
-            self.logger.info(f'Benign dataset path: {benign_path}')
-            self.logger.info(f'Malign dataset path: {malign_path}')
+            self.logger.info(self.color_log(f'Benign dataset path: {benign_path}', Fore.GREEN))
+            self.logger.info(self.color_log(f'Malign dataset path: {malign_path}', Fore.GREEN))
 
             # Load the data
             benign_data = pq.read_table(benign_path)
@@ -546,10 +545,26 @@ class FeatureEngineeringCLI:
             combined_data = pa.concat_tables([benign_data, malign_data])
             combined_df = combined_data.to_pandas()
 
+            #mix the records, so its not benign first and then malign, but it is random
+            combined_df = combined_df.sample(frac=1).reset_index(drop=True)
+
+
+            unique_labels = combined_df['label'].unique()
+            class_map = {}
+            for label in unique_labels:
+                if label.startswith("benign"):
+                    class_map[label] = 0
+                elif label.startswith("malware"):
+                    class_map[label] = 1
+                elif label.startswith("misp") and "phishing" in label:
+                    class_map[label] = 1 
+    
+            self.logger.info(self.color_log(f"Generated class map: {class_map}", Fore.GREEN))
+
             # Separate labels and features
-            class_map = {"benign_2310:unknown": 0, "misp_2310:phishing": 1}
-            labels = combined_df['label'].apply(lambda x: class_map[x])
-            features = combined_df.drop('label', axis=1)
+            labels = combined_df['label'].apply(lambda x: class_map.get(x, -1))  # -1 for any label not in class_map
+            features = combined_df.drop('label', axis=1).copy()
+
 
             # Process timestamps
             for col in features.columns:
@@ -600,9 +615,10 @@ class FeatureEngineeringCLI:
 
                     # Calculating the number of rows removed
                     removed_count = original_len - len(features)
-                    self.logger.info(f"Outliers removed from {column}: {removed_count} rows")
+                    self.logger.info(f"Outliers removed from {column}: {self.color_log(removed_count, Fore.RED)} rows")
 
-            
+                #IRQ not suitable, too strict, removes too many records
+                    
                 # for column in features.select_dtypes(include=[np.number]).columns:
                 #     original_len = len(features)
                     
@@ -638,7 +654,7 @@ class FeatureEngineeringCLI:
                     self.logger.info(self.color_log("Scaling applied to the features\n", Fore.GREEN))
 
             # Merge the labels back into features for saving
-            features['label'] = labels
+            # features['label'] = labels
 
             # Save the modified dataset as a Parquet file
             modified_data = pa.Table.from_pandas(features)
@@ -689,10 +705,12 @@ def feature_engineering(eda: bool, model: str, scaling: bool):
 
     if eda:
         features, labels = fe_cli.perform_eda(model, scaling)
+        
         current_date = datetime.datetime.now().strftime("%Y-%m-%d")
         benign_name = ''.join(chosen_benign.split('_')[:2])
         malign_name = ''.join(chosen_malign.split('_')[:2])
         dataset_name = f"dataset_{benign_name}_{malign_name}_{current_date}"
+        dataset_name = dataset_name.replace('.parquet', '') + '.parquet'
 
         dataset = {
             'name': dataset_name,
