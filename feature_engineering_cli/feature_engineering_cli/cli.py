@@ -40,6 +40,7 @@ import torch
 
 # import hash_countries from geo_mapping.py
 from mapping import country_ids, continent_ids
+from category_encoders import BinaryEncoder
 
 
 # Suppress specific warnings
@@ -294,6 +295,16 @@ class FeatureEngineeringCLI:
                 df = pd.concat([df, encoded_features], axis=1)
 
                 self.logger.info(self.color_log(f"Applied one-hot encoding to feature: {feature}", Fore.GREEN))
+
+        if 'lex_tld_hash' in df.columns:
+            # Initialize and apply BinaryEncoder
+            binary_encoder = BinaryEncoder(cols=['lex_tld_hash'])
+            df = binary_encoder.fit_transform(df)
+            # new_features = [col for col in df.columns if col.startswith('lex_tld_hash_')]
+            # self.logger.info(self.color_log("New binary-encoded features created for 'lex_tld_hash':", Fore.GREEN))
+            # for feature in new_features:
+            #     self.logger.info(self.color_log(feature, Fore.YELLOW))
+            self.logger.info(self.color_log("Applied binary encoding to feature: lex_tld_hash", Fore.GREEN))
 
         return df
 
@@ -684,12 +695,6 @@ class FeatureEngineeringCLI:
                     self.logger.info(self.color_log(f"Applying {scaler_type} scaling to the features.", Fore.YELLOW))
                     features = self.apply_scaling(features, scaler_type)
                     self.logger.info(self.color_log("Scaling applied to the features\n", Fore.GREEN))
-
-            # for col in features.columns:
-            #     if col.startswith("geo_countries"):
-            #         self.logger.info(self.color_log(f"Unique values AFTER SCALING for {col}:", Fore.YELLOW))
-            #         self.logger.info(features[col].value_counts())
-
 
             # Save the modified dataset as a Parquet file
             modified_data = pa.Table.from_pandas(features)
