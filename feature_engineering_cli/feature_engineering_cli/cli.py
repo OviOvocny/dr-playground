@@ -38,6 +38,10 @@ from colorama import init, Fore, Style
 from tabulate import tabulate
 import torch
 
+# import hash_countries from geo_mapping.py
+from mapping import country_ids, continent_ids
+
+
 # Suppress specific warnings
 warnings.filterwarnings("ignore", category=FutureWarning, module="pandas.api.types")
 warnings.filterwarnings("ignore", message="is_sparse is deprecated", category=FutureWarning)
@@ -250,6 +254,49 @@ class FeatureEngineeringCLI:
         feature_value = dataset.iloc[sample_index, highest_shap_index]
 
         return feature_name, feature_value
+    
+
+    def reverse_map_continent(self, continent_id):
+        for name, id in continent_ids.items():
+            if id == continent_id:
+                return name
+        return "Unknown"
+
+    def reverse_map_country(self, country_id):
+        for name, id in country_ids.items():
+            if id == country_id:
+                return name
+        return "Unknown"
+        
+
+    def categorical_encoding(self, df: DataFrame) -> DataFrame:
+        # Reverse mapping from IDs to names
+        if 'geo_continent_hash' in df.columns:
+            df['geo_continent'] = df['geo_continent_hash'].apply(self.reverse_map_continent)
+            df.drop('geo_continent_hash', axis=1, inplace=True)
+        
+        if 'geo_countries_hash' in df.columns:
+            df['geo_countries'] = df['geo_countries_hash'].apply(self.reverse_map_country)
+            df.drop('geo_countries_hash', axis=1, inplace=True)
+
+        # Identifying categorical features for one-hot encoding
+        features_to_encode = ['geo_continent', 'geo_countries']
+        existing_features = [feature for feature in features_to_encode if feature in df.columns]
+        
+        if existing_features:
+            # Ensuring binary (0, 1) encoding for the presence or absence of categories
+            for feature in existing_features:
+                # Using get_dummies for one-hot encoding, drop_first=False to keep all categories
+                encoded_features = pd.get_dummies(df[feature], prefix=feature, drop_first=False)
+                # Dropping the original column after encoding
+                df.drop(feature, axis=1, inplace=True)
+                # Concatenating the new binary-encoded columns to the dataframe
+                df = pd.concat([df, encoded_features], axis=1)
+
+                self.logger.info(self.color_log(f"Applied one-hot encoding to feature: {feature}", Fore.GREEN))
+
+        return df
+
 
     def perform_feature_engineering(self) -> None:
         benign_path = os.path.join(self.DEFAULT_INPUT_DIR, self.benign_path) if self.benign_path else None
@@ -284,7 +331,6 @@ class FeatureEngineeringCLI:
         # Convert to pandas DataFrame if needed
         df1 = data.to_pandas()
         df2 = data2.to_pandas()
-
 
         # Calculate ratio of benign to phishing for features containing 'tls'
         features_with_validity_len = [col for col in df1.columns if 'validity' in col]
@@ -406,26 +452,6 @@ class FeatureEngineeringCLI:
         self.logger.info(self.color_log("Summary Statistics of the Dataset:", Fore.YELLOW))
         self.logger.info(df.describe())
 
-        #UNIQUE VALUES OF CATEGORICAL FEATURES
-        # self.logger.info(self.color_log("Number of unique values in lex_tld_hash:", Fore.YELLOW))
-        # self.logger.info(df['lex_tld_hash'].nunique())
-
-        # self.logger.info(self.color_log("Number of unique values in rdap_registrar_name_hash:", Fore.YELLOW))
-        # self.logger.info(df['rdap_registrar_name_hash'].nunique())
-
-        # self.logger.info(self.color_log("Number of unique values in tls_root_authority_hash:", Fore.YELLOW))
-        # self.logger.info(df['tls_root_authority_hash'].nunique())
-
-        # self.logger.info(self.color_log("Number of unique values in tls_leaf_authority_hash:", Fore.YELLOW))
-        # self.logger.info(df['tls_leaf_authority_hash'].nunique())
-
-        # self.logger.info(self.color_log("Number of unique values in geo_countries_hash:", Fore.YELLOW))
-        # self.logger.info(df['geo_countries_hash'].nunique())
-
-        # self.logger.info(self.color_log("Number of unique values in geo_continent_hash:", Fore.YELLOW))
-        # self.logger.info(df['geo_continent_hash'].nunique())
-
-
         # Check for missing values
         self.logger.info(self.color_log("Missing Values:", Fore.YELLOW))
         missing_values = df.isnull().sum()
@@ -545,8 +571,11 @@ class FeatureEngineeringCLI:
             combined_data = pa.concat_tables([benign_data, malign_data])
             combined_df = combined_data.to_pandas()
 
-            #mix the records, so its not benign first and then malign, but it is random
+            # randomly shuffle the records
             combined_df = combined_df.sample(frac=1).reset_index(drop=True)
+
+            # Categorical Encoding
+            combined_df = self.categorical_encoding(combined_df)
 
 
             unique_labels = combined_df['label'].unique()
@@ -564,7 +593,6 @@ class FeatureEngineeringCLI:
             # Separate labels and features
             labels = combined_df['label'].apply(lambda x: class_map.get(x, -1))  # -1 for any label not in class_map
             features = combined_df.drop('label', axis=1).copy()
-
 
             # Process timestamps
             for col in features.columns:
@@ -585,37 +613,41 @@ class FeatureEngineeringCLI:
 
             potentially_useless = self.explore_data(combined_df, "Combined Dataset")
 
-            response = input(self.color_log("Do you want to implement the mentioned suggestions (removal of potentially useless features and outliers)? (yes/no): ", Fore.YELLOW)).strip().lower()
+            response = input(self.color_log("Do you want to implement the mentioned suggestions (handling missing values, removing outliers, categorical features encoding)? (yes/no): ", Fore.YELLOW)).strip().lower()
 
             if response == 'yes':
                 # Remove potentially useless features
-                features = self.remove_features(features, potentially_useless)
+                #features = self.remove_features(features, potentially_useless)
+
                 #drop those same labels
-                labels = self.remove_features(labels, potentially_useless)
+                #labels = self.remove_features(labels, potentially_useless)
 
+                # Remove outliers
                 for column in features.select_dtypes(include=[np.number]).columns:
-                    # Saving the original length of the dataframe for later comparison
-                    original_len = len(features)
+                    # Ignore columns starting with "geo_countries" and "geo_continent"
+                    if not column.startswith("geo_countries") and not column.startswith("geo_continent"):
+                        # Saving the original length of the dataframe for later comparison
+                        original_len = len(features)
 
-                    # Calculating the mean and standard deviation of the current column
-                    mean_val = features[column].mean()
-                    std_val = features[column].std()
+                        # Calculating the mean and standard deviation of the current column
+                        mean_val = features[column].mean()
+                        std_val = features[column].std()
 
-                    # Defining a multiplier for standard deviation to identify outliers
-                    std_multiplier = 8
+                        # Defining a multiplier for standard deviation to identify outliers
+                        std_multiplier = 8
 
-                    # Outliers are defined as values that are more than 'std_multiplier' standard deviations away from the mean
-                    is_outlier = (features[column] < (mean_val - std_multiplier * std_val)) | \
-                                (features[column] > (mean_val + std_multiplier * std_val))
-                    outlier_index = features[is_outlier].index
+                        # Outliers are defined as values that are more than 'std_multiplier' standard deviations away from the mean
+                        is_outlier = (features[column] < (mean_val - std_multiplier * std_val)) | \
+                                    (features[column] > (mean_val + std_multiplier * std_val))
+                        outlier_index = features[is_outlier].index
 
-                    # Removing the identified outliers from the 'features' and 'labels' dataframes
-                    features.drop(outlier_index, inplace=True)
-                    labels.drop(outlier_index, inplace=True)
+                        # Removing the identified outliers from the 'features' and 'labels' dataframes
+                        features.drop(outlier_index, inplace=True)
+                        labels.drop(outlier_index, inplace=True)
 
-                    # Calculating the number of rows removed
-                    removed_count = original_len - len(features)
-                    self.logger.info(f"Outliers removed from {column}: {self.color_log(removed_count, Fore.RED)} rows")
+                        # Calculating the number of rows removed
+                        removed_count = original_len - len(features)
+                        self.logger.info(f"Outliers removed from {column}: {self.color_log(removed_count, Fore.RED)} rows")
 
                 #IRQ not suitable, too strict, removes too many records
                     
@@ -653,8 +685,11 @@ class FeatureEngineeringCLI:
                     features = self.apply_scaling(features, scaler_type)
                     self.logger.info(self.color_log("Scaling applied to the features\n", Fore.GREEN))
 
-            # Merge the labels back into features for saving
-            # features['label'] = labels
+            # for col in features.columns:
+            #     if col.startswith("geo_countries"):
+            #         self.logger.info(self.color_log(f"Unique values AFTER SCALING for {col}:", Fore.YELLOW))
+            #         self.logger.info(features[col].value_counts())
+
 
             # Save the modified dataset as a Parquet file
             modified_data = pa.Table.from_pandas(features)
@@ -717,7 +752,7 @@ def feature_engineering(eda: bool, model: str, scaling: bool):
             'features': features,
             'labels': labels,
             'dimension': features.shape[1]
-        }
+        }        
 
         directory = 'datasets'
         file_path = os.path.join(directory, 'malware_dataset.pickle')
@@ -727,6 +762,7 @@ def feature_engineering(eda: bool, model: str, scaling: bool):
         
         with open(file_path, 'wb') as file:
             pickle.dump(dataset, file, protocol=pickle.HIGHEST_PROTOCOL)
+
 
         x_train, x_test, y_train, y_test = train_test_split(
             dataset['features'],
