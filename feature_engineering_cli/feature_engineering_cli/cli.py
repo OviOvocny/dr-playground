@@ -306,6 +306,17 @@ class FeatureEngineeringCLI:
             #     self.logger.info(self.color_log(feature, Fore.YELLOW))
             self.logger.info(self.color_log("Applied binary encoding to feature: lex_tld_hash", Fore.GREEN))
 
+        #remove features rdap_registrar_name_hash, tls_root_authority_hash, tls_leaf_authority_hash
+        if 'rdap_registrar_name_hash' in df.columns:
+            df.drop('rdap_registrar_name_hash', axis=1, inplace=True)
+            self.logger.info(self.color_log("Dropped feature: rdap_registrar_name_hash", Fore.GREEN))
+        if 'tls_root_authority_hash' in df.columns:
+            df.drop('tls_root_authority_hash', axis=1, inplace=True)
+            self.logger.info(self.color_log("Dropped feature: tls_root_authority_hash", Fore.GREEN))
+        if 'tls_leaf_authority_hash' in df.columns:
+            df.drop('tls_leaf_authority_hash', axis=1, inplace=True)
+            self.logger.info(self.color_log("Dropped feature: tls_leaf_authority_hash", Fore.GREEN))
+
         return df
 
 
