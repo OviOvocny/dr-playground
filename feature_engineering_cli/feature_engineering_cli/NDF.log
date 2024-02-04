@@ -1,0 +1,4 @@
+2024-02-04 18:27:50,288 - __main__ - INFO - [32mBenign dataset path: ../../floor/inputs-for-petr/benign_2310.parquet[0m
+2024-02-04 18:27:50,289 - __main__ - INFO - [32mMalign dataset path: ../../floor/inputs-for-petr/phishing_2311.parquet[0m
+2024-02-04 18:28:03,402 - __main__ - INFO - [32mApplied one-hot encoding to feature: geo_continent[0m
+2024-02-04 18:28:05,865 - __main__ - INFO - [32mApplied one-hot encoding to feature: geo_countries[0m
