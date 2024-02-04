@@ -58,7 +58,7 @@ class FeatureEngineeringCLI:
         self.benign_path = benign_path
         self.malign_path = malign_path
         self.logger = self.configure_logger()
-        self.DEFAULT_INPUT_DIR = "../../floor/inputs-for-petr"
+        self.DEFAULT_INPUT_DIR = ""
         self.nontraining_fields = [
             "dns_evaluated_on",
             "rdap_evaluated_on",
@@ -93,18 +93,20 @@ class FeatureEngineeringCLI:
         logger = logging.getLogger(__name__)
         logger.setLevel(logging.INFO)
 
-        file_handler = logging.FileHandler('feature_engineering.log')
-        file_handler.setLevel(logging.INFO)
+        if not logger.handlers:
+            # Only add handlers if they don't exist to prevent duplication
+            file_handler = logging.FileHandler('NDF.log')
+            file_handler.setLevel(logging.INFO)
 
-        console_handler = logging.StreamHandler()
-        console_handler.setLevel(logging.INFO)
+            console_handler = logging.StreamHandler()
+            console_handler.setLevel(logging.INFO)
 
-        formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-        file_handler.setFormatter(formatter)
-        console_handler.setFormatter(formatter)
+            formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+            file_handler.setFormatter(formatter)
+            console_handler.setFormatter(formatter)
 
-        logger.addHandler(file_handler)
-        logger.addHandler(console_handler)
+            logger.addHandler(file_handler)
+            logger.addHandler(console_handler)
 
         return logger
 
@@ -275,6 +277,8 @@ class FeatureEngineeringCLI:
             self.logger.info(self.color_log(f'Benign dataset path: {benign_path}', Fore.GREEN))
             self.logger.info(self.color_log(f'Malign dataset path: {malign_path}', Fore.GREEN))
 
+            print(f'Malign dataset path: {malign_path}')
+            print(f'Benign dataset path: {benign_path}')
             # Load the data
             benign_data = pq.read_table(benign_path)
             malign_data = pq.read_table(malign_path)
@@ -403,7 +407,7 @@ def display_dataset_subset(x_train, y_train, dataset_name, dimension, subset_siz
     print("Dimension:", dimension)
 
 
-def feature_engineering(model: str, scaling: bool, benign: str, malign: str):
+def NDF(model: str, scaling: bool, benign: str, malign: str):
     fe_cli = FeatureEngineeringCLI(benign, malign)
 
 
@@ -423,7 +427,7 @@ def feature_engineering(model: str, scaling: bool, benign: str, malign: str):
     }        
 
     directory = 'datasets'
-    file_path = os.path.join(directory, 'malware_dataset.pickle')
+    file_path = os.path.join(directory, 'preprocessed_dataset.pickle')
     
     if not os.path.exists(directory):
         os.makedirs(directory)
@@ -440,8 +444,9 @@ def feature_engineering(model: str, scaling: bool, benign: str, malign: str):
     )
 
     display_dataset_subset(x_train, y_train, dataset['name'], dataset['dimension'])
+    return dataset
 
 if __name__ == '__main__':
     benign = "../../floor/inputs-for-petr/benign_2310.parquet"
     malign = "../../floor/inputs-for-petr/phishing_2311.parquet"
-    feature_engineering(model='cnn', scaling=True, benign=benign, malign=malign)
+    NDF(model='cnn', scaling=True, benign=benign, malign=malign)
