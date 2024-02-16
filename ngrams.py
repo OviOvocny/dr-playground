@@ -185,6 +185,7 @@ if __name__ == '__main__':
 
     
     analyzer = NgramsAnalyzer('floor/phishing_2311.parquet')
+    #analyzer = NgramsAnalyzer('floor/phishing_2307.parquet')
     analyzer.analyze_ngrams('ngram_freq_phishing.json',
                             bigram_n=300, trigram_n=2000, tetragram_n=5000, pentagram_n=10000)
 
