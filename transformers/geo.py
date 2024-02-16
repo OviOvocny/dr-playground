@@ -172,7 +172,7 @@ def geo(df: DataFrame) -> DataFrame:
     df['geo_max_lon'] = df['longitudes'].apply(get_max)
 
     df['geo_lat_range'] = df.apply(lambda row: (row['geo_max_lat'] - row['geo_min_lat']) if row['geo_max_lat'] is not None and row['geo_min_lat'] is not None else 0.0, axis=1)
-    df['geo_lon_range'] = df.apply(lambda row: (row['geo_max_lat'] - row['geo_min_lat']) if row['geo_max_lat'] is not None and row['geo_min_lat'] is not None else 0.0, axis=1)
+    df['geo_lon_range'] = df.apply(lambda row: (row['geo_max_lon'] - row['geo_min_lon']) if row['geo_max_lon'] is not None and row['geo_min_lon'] is not None else 0.0, axis=1)
 
     df['geo_centroid_lat'] = df.apply(lambda row: (row['geo_min_lat'] + row['geo_max_lat'] / 2) if row['geo_min_lat'] is not None and row['geo_max_lat'] is not None else 0.0, axis=1)
     df['geo_centroid_lon'] = df.apply(lambda row: (row['geo_min_lon'] + row['geo_max_lon'] / 2) if row['geo_min_lon'] is not None and row['geo_max_lon'] is not None else 0.0, axis=1)
