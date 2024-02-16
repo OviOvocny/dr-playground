@@ -85,7 +85,7 @@ def get_max(values):
     v = [float(x) for x in values if x is not None]
     if len(v) == 0:
         return 0.0
-    return float(np.min(v))
+    return float(np.max(v))
 
 
 def mean_of_existing_values(values):
