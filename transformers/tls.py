@@ -88,10 +88,10 @@ def analyze_tls(item: dict, collection_date: datetime.datetime) -> dict:
             "tls_negotiated_version_id": None,              # Evaluated TLS version
             "tls_negotiated_cipher_id": None,               # Evaluated cipher
             "tls_root_cert_validity_len": None,             # Total validity time of root certificate
-            "tls_root_cert_lifetime": None,                 # How long was the root certificate valid at the time of collection
+            #"tls_root_cert_lifetime": None,                 # How long was the root certificate valid at the time of collection
             #NOTUSED# "tls_root_cert_validity_remaining": None, # Time to expire of root certificate from time of collection
             "tls_leaf_cert_validity_len": None,             # Total validity time of leaf certificate      
-            "tls_leaf_cert_lifetime": None,                 # How long was the leaf certificate valid at the time of collection
+            #"tls_leaf_cert_lifetime": None,                 # How long was the leaf certificate valid at the time of collection
             #NOTUSED# "tls_leaf_cert_validity_remaining": None,  # Time to expire of leaf certificate from time of collection      
             #NOTUSED# "tls_mean_certs_validity_len": None,       # Mean validity time of all certificates in chain including root
             "tls_broken_chain": None,                       # Chain was never valid, 
