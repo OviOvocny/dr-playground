@@ -40,7 +40,7 @@ from tabulate import tabulate
 import torch
 
 # import hash_countries from geo_mapping.py
-from mapping import country_ids, continent_ids
+from utils.mapping import country_ids, continent_ids
 from category_encoders import BinaryEncoder
 
 #scaler saving
@@ -425,13 +425,15 @@ class FeatureEngineeringCLI:
             # Save the modified dataset as a Parquet file
             modified_data = pa.Table.from_pandas(features)
             output_path = os.path.join(self.DEFAULT_INPUT_DIR, 'modified_dataset.parquet')
+            feature_names = features.columns
+
             pq.write_table(modified_data, output_path)
             self.logger.info(self.color_log(f"Modified combined dataset saved to {output_path}", Fore.GREEN))
 
             self.logger.info(self.color_log("Head of modified combined dataset:", Fore.YELLOW))
             self.logger.info(features)
 
-            return torch.tensor(features.values).float(), torch.tensor(labels.values).float()
+            return torch.tensor(features.values).float(), torch.tensor(labels.values).float(), feature_names, class_map
 
 
 def choose_dataset(files, dataset_type):
@@ -460,7 +462,7 @@ def NDF(model: str, scaling: bool, benign: str, malign: str):
     fe_cli = FeatureEngineeringCLI(benign, malign)
 
 
-    features, labels = fe_cli.perform_eda(model, scaling)
+    features, labels, feature_names, class_map = fe_cli.perform_eda(model, scaling)
     
     current_date = datetime.datetime.now().strftime("%Y-%m-%d")
     benign_name = ''.join(benign.split('_')[:2])
@@ -472,7 +474,9 @@ def NDF(model: str, scaling: bool, benign: str, malign: str):
         'name': dataset_name,
         'features': features,
         'labels': labels,
-        'dimension': features.shape[1]
+        'dimension': features.shape[1],
+        'feature_names': feature_names,
+        'class_map': class_map
     }        
 
     directory = 'datasets'
@@ -494,8 +498,3 @@ def NDF(model: str, scaling: bool, benign: str, malign: str):
 
     display_dataset_subset(x_train, y_train, dataset['name'], dataset['dimension'])
     return dataset
-
-if __name__ == '__main__':
-    benign = "../../floor/inputs-for-petr/benign_2310.parquet"
-    malign = "../../floor/inputs-for-petr/phishing_2311.parquet"
-    NDF(model='cnn', scaling=True, benign=benign, malign=malign)

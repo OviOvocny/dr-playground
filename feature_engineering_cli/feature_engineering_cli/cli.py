@@ -31,6 +31,8 @@ from xgboost import XGBClassifier
 import shap
 from scipy.stats import zscore
 from statsmodels.stats.outliers_influence import variance_inflation_factor
+from sklearn.tree import DecisionTreeClassifier
+
 
 # Other utilities
 import click
@@ -270,8 +272,9 @@ class FeatureEngineeringCLI:
         return "Unknown"
         
 
-    def categorical_encoding(self, df: DataFrame) -> DataFrame:
-        # Reverse mapping from IDs to names
+    def categorical_encoding_geo(self, df: DataFrame) -> DataFrame:
+        # Handling geographical features: geo_continent_hash, geo_countries_hash
+        
         if 'geo_continent_hash' in df.columns:
             df['geo_continent'] = df['geo_continent_hash'].apply(self.reverse_map_continent)
             df.drop('geo_continent_hash', axis=1, inplace=True)
@@ -280,39 +283,41 @@ class FeatureEngineeringCLI:
             df['geo_countries'] = df['geo_countries_hash'].apply(self.reverse_map_country)
             df.drop('geo_countries_hash', axis=1, inplace=True)
 
-        # Identifying categorical features for one-hot encoding
+        # One-hot encoding for geographical features
         features_to_encode = ['geo_continent', 'geo_countries']
         existing_features = [feature for feature in features_to_encode if feature in df.columns]
         
         if existing_features:
-            # Ensuring binary (0, 1) encoding for the presence or absence of categories
             for feature in existing_features:
-                # Using get_dummies for one-hot encoding, drop_first=False to keep all categories
                 encoded_features = pd.get_dummies(df[feature], prefix=feature, drop_first=False)
-                # Dropping the original column after encoding
                 df.drop(feature, axis=1, inplace=True)
-                # Concatenating the new binary-encoded columns to the dataframe
                 df = pd.concat([df, encoded_features], axis=1)
-
                 self.logger.info(self.color_log(f"Applied one-hot encoding to feature: {feature}", Fore.GREEN))
 
+        return df
+
+    def categorical_encoding_lex(self, df: DataFrame) -> DataFrame:
+        # Handling lexical features: tld_hash
+        
         if 'lex_tld_hash' in df.columns:
-            # Initialize and apply BinaryEncoder
             binary_encoder = BinaryEncoder(cols=['lex_tld_hash'])
             df = binary_encoder.fit_transform(df)
-            # new_features = [col for col in df.columns if col.startswith('lex_tld_hash_')]
-            # self.logger.info(self.color_log("New binary-encoded features created for 'lex_tld_hash':", Fore.GREEN))
-            # for feature in new_features:
-            #     self.logger.info(self.color_log(feature, Fore.YELLOW))
             self.logger.info(self.color_log("Applied binary encoding to feature: lex_tld_hash", Fore.GREEN))
 
-        #remove features rdap_registrar_name_hash, tls_root_authority_hash, tls_leaf_authority_hash
+        return df
+
+    def categorical_encoding_tls_rdap(self, df: DataFrame) -> DataFrame:
+        # Handling TLS/RDAP features: registrar_name_hash, root_authority_hash, leaf_authority_hash
+        
+        # Drop features without encoding, as they are not directly encoded but instead removed or handled differently.
         if 'rdap_registrar_name_hash' in df.columns:
             df.drop('rdap_registrar_name_hash', axis=1, inplace=True)
             self.logger.info(self.color_log("Dropped feature: rdap_registrar_name_hash", Fore.GREEN))
+        
         if 'tls_root_authority_hash' in df.columns:
             df.drop('tls_root_authority_hash', axis=1, inplace=True)
             self.logger.info(self.color_log("Dropped feature: tls_root_authority_hash", Fore.GREEN))
+        
         if 'tls_leaf_authority_hash' in df.columns:
             df.drop('tls_leaf_authority_hash', axis=1, inplace=True)
             self.logger.info(self.color_log("Dropped feature: tls_leaf_authority_hash", Fore.GREEN))
@@ -597,7 +602,28 @@ class FeatureEngineeringCLI:
             combined_df = combined_df.sample(frac=1).reset_index(drop=True)
 
             # Categorical Encoding
-            combined_df = self.categorical_encoding(combined_df)
+            combined_df = self.categorical_encoding_lex(combined_df)
+
+            # Extract labels
+            if 'label' in combined_df.columns:
+                labels = combined_df['label']
+            else:
+                raise ValueError("Label column not found in the dataframe.")
+
+            categorical_features = ['geo_continent_hash', 'geo_countries_hash', 'rdap_registrar_name_hash', 'tls_root_authority_hash', 'tls_leaf_authority_hash']
+            X_categorical = combined_df[categorical_features]
+
+            # Train a decision tree to get class probabilities
+            # Assuming 'labels' is a binary classification target extracted from 'combined_df'
+            decision_tree = DecisionTreeClassifier()
+            decision_tree.fit(X_categorical, labels)
+
+            # Extract probability of the positive class
+            probabilities = decision_tree.predict_proba(X_categorical)[:, 1]  # Get probability of class 1
+
+            # Add this probability as a new feature
+            combined_df['dtree_prob'] = probabilities
+            self.logger.info(self.color_log("New feature 'dtree_prob' created from all the categorical features", Fore.GREEN))
 
 
             unique_labels = combined_df['label'].unique()

@@ -11,6 +11,8 @@ class Config:
     # Collections to process by loader - {label: collection_name}
     COLLECTIONS = {
         # "phishing_2307": "misp_2307",
-        "benign_cesnet_union_2307": "benign_cesnet_union_2307",
+        # "benign_cesnet_union_2307": "benign_cesnet_union_2307",
         # "misp_2310": "misp_2310",
+        # "cesnet3_2311":"cesnet3_2311",
+        "phishing_since_2402":"phishing_since_2402"
     }
