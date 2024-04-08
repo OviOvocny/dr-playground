@@ -21,3 +21,8 @@ feature_engineering_cli/feature_engineering_cli/datasets/malware_dataset.pickle
 
 domain_datafile.trapcap.*
 filtered_domain_datafile.trapcap.*
+
+*.png
+*.joblib
+*.pickle
+*.pickle.dat

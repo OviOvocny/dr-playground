@@ -137,7 +137,7 @@ Given the historical nature of the domain data, a I had to create a Python scrip
 - **Domain Data Reading**: It reads domain names from a file (`misp2311_finished_list.txt`). This finished list is a list of ground-truth domains that have been verified in the previous step.
 
 - **Data Transfer Process**:
-  - **Source and Destination Collections**: Identifies for one collection (old one, with collected data) as the source collection and the other one` as the destination collection within the database `drdb`.
+  - **Source and Destination Collections**: Identifies for one collection (old one, with collected data) as the source collection and the other one as the destination collection within the database `drdb`.
   - **Data Transfer Loop**:
     - Iterates over the list of domain names.
     - For each domain name, queries the source collection to retrieve associated records.
