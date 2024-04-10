@@ -2,7 +2,7 @@ import pymongo
 from tqdm import tqdm
 
 # MongoDB connection details
-mongo_uri = "***REMOVED***"
+mongo_uri = "read these things from env variables or perish"
 client = pymongo.MongoClient(mongo_uri)
 db = client['drdb']
 
