@@ -1,12 +1,13 @@
-from typing import Optional
-from pandas import DataFrame
 import json
-
-import numpy as np
-import re
-
 import math
+import re
+from typing import Optional
+
+import ahocorasick
+import numpy as np
 import tldextract
+from pandas import DataFrame
+
 from ._helpers import get_normalized_entropy, get_stddev, simhash
 
 phishing_keywords = [
@@ -152,7 +153,7 @@ def get_tld_abuse_score(tld):
     # Return the abuse score if the TLD is in the dictionary, otherwise return 0
     return _tld_abuse_scores.get(tld, 0)
 
- 
+
 # Compile the regular expressions for both patterns
 _ipv4_standard_format = re.compile(r'(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)')
 _ipv4_dashed_format = re.compile(r'(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)-){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)')
@@ -163,21 +164,66 @@ def contains_ipv4(s):
         return True
     return False
 
-_phishing_ngram_freq = dict()
-_malware_ngram_freq = dict()
-_dga_ngram_freq = dict()
+def load_ngram_data(json_path: str) -> dict:
+    """
+    Loads JSON data from a file.
+
+    @param json_path Path to the JSON file.
+    @return Dictionary containing the loaded data, or an empty dictionary if an error occurs.
+    """
+    try:
+        with open(json_path) as file:
+            data = json.load(file)
+        return data
+    except FileNotFoundError:
+        print(f"Error: The file {json_path} was not found.")
+    except json.JSONDecodeError:
+        print("Error: The file is not a valid JSON document.")
+    except Exception as e:
+        print(f"An unexpected error occurred: {e}")
+    return {}
+
+
+# Calculate ngram matches, find if bigram or trigram of this domain name is present in the ngram list
+def find_ngram_matches(text: str, automaton: ahocorasick.Automaton):
+    """
+    Uses a precompiled Aho-Corasick automaton to count unique n-gram matches in the text.
+    The search is case-insensitive.
+
+    @param text: Text in which to find n-grams.
+    @param automaton: Precompiled Aho-Corasick automaton.
+    @return: Number of unique matches found.
+    """
+    matched_ngrams = set()
+    for _, found_ngram in automaton.iter(text):
+        matched_ngrams.add(found_ngram)
+    return len(matched_ngrams)
+
+
+def build_automatons(ngram_freqs: dict[str, dict[str, int]]) -> dict[str, ahocorasick.Automaton]:
+    """
+    Builds and returns a dictionary of Aho-Corasick automatons for each n-gram type provided.
+
+    @param ngram_freqs: Dictionary where keys are n-gram types (e.g., "bigram_freq") and values are dictionaries of n-grams.
+    @return: Dictionary of Aho-Corasick automatons for each n-gram type.
+    """
+    automatons = {}
+    for ngram_type, ngrams in ngram_freqs.items():
+        automaton = ahocorasick.Automaton()
+        for ngram in ngrams:
+            automaton.add_word(ngram, ngram)
+        automaton.make_automaton()
+        automatons[ngram_type] = automaton
+    return automatons
+
 
 # N-grams
-with open('ngram_freq_phishing.json') as f:
-    _phishing_ngram_freq = json.load(f)
-
-# N-grams
-with open('ngram_freq_malware.json') as f:
-    _malware_ngram_freq = json.load(f)
-
-# N-grams
-with open('ngram_freq_dga.json') as f:
-    _dga_ngram_freq = json.load(f)
+_phishing_ngram_freq = load_ngram_data("ngram_freq_phishing.json")
+_malware_ngram_freq = load_ngram_data("ngram_freq_malware.json")
+_dga_ngram_freq = load_ngram_data("ngram_freq_dga.json")
+_phishing_ngram_aho_corasick_automatons = build_automatons(_phishing_ngram_freq)
+_malware_ngram_aho_corasick_automatons = build_automatons(_malware_ngram_freq)
+_dga_ngram_aho_corasick_automatons = build_automatons(_dga_ngram_freq)
 
 
 def longest_consonant_seq(domain: str) -> int:
@@ -383,20 +429,6 @@ def consecutive_chars(domain: str) -> int:
         prev_char = char
     return max_count
 
-
-# Calculate ngram matches, find if bigram or trigram of this domain name is present in the ngram list
-def find_ngram_matches(text: str, ngrams: dict) -> int:
-    """
-    Find the number of ngram matches in the text.
-    Input: text string, ngrams dictionary
-    Output: number of matches
-    """
-    matches = 0
-    for ngram in ngrams:
-        if ngram in text:
-            matches += 1
-    return matches
-
 # Returns an array od domain parts lengths
 def get_lengths_of_parts(dn: str):
     # Split the domain string into parts divided by dots
@@ -464,7 +496,7 @@ def lex(df: DataFrame) -> DataFrame:
     df['lex_sld_hex_ratio'] = df['tmp_sld'].apply(
         lambda x: (sum(1 for c in x if c in '0123456789ABCDEFabcdef') / len(x)) if len(x) > 0 else 0)
     # End of new SLD-based features
-    
+
     df['lex_sub_count'] = df['domain_name'].apply(lambda x: count_subdomains(x))  # Number of subdomains (without www)
     df['lex_stld_unique_char_count'] = df['tmp_stld'].apply(
         lambda x: len(set(x.replace(".", ""))))  # Number of unique characters in TLD and SLD
@@ -493,19 +525,18 @@ def lex(df: DataFrame) -> DataFrame:
         lambda x: (sum(1 for c in x if c in '0123456789ABCDEFabcdef')) if len(x) > 0 else 0)
     df['lex_sub_hex_ratio'] = df['tmp_concat_subdomains'].apply(
         lambda x: (sum(1 for c in x if c in '0123456789ABCDEFabcdef') / len(x)) if len(x) > 0 else 0)
-    
-    # N-Grams
-    df["lex_phishing_bigram_matches"] = df["tmp_concat_subdomains"].apply(find_ngram_matches, args=(_phishing_ngram_freq["bigram_freq"],))
-    df["lex_phishing_trigram_matches"] = df["tmp_concat_subdomains"].apply(find_ngram_matches, args=(_phishing_ngram_freq["trigram_freq"],))
-    df["lex_phishing_tetragram_matches"] = df["tmp_concat_subdomains"].apply(find_ngram_matches, args=(_phishing_ngram_freq["tetragram_freq"],))
-    df["lex_phishing_pentagram_matches"] = df["tmp_concat_subdomains"].apply(find_ngram_matches, args=(_phishing_ngram_freq["pentagram_freq"],))
 
-    df["lex_malware_bigram_matches"] = df["tmp_concat_subdomains"].apply(find_ngram_matches, args=(_malware_ngram_freq["bigram_freq"],))
-    df["lex_malware_trigram_matches"] = df["tmp_concat_subdomains"].apply(find_ngram_matches, args=(_malware_ngram_freq["trigram_freq"],))
-    df["lex_malware_tetragram_matches"] = df["tmp_concat_subdomains"].apply(find_ngram_matches, args=(_malware_ngram_freq["tetragram_freq"],))
-    df["lex_dga_bigram_matches"] = df["tmp_concat_subdomains"].apply(find_ngram_matches, args=(_dga_ngram_freq["bigram_freq"],))
-    df["lex_dga_trigram_matches"] = df["tmp_concat_subdomains"].apply(find_ngram_matches, args=(_dga_ngram_freq["trigram_freq"],))
-    df["lex_dga_tetragram_matches"] = df["tmp_concat_subdomains"].apply(find_ngram_matches, args=(_dga_ngram_freq["tetragram_freq"],))
+    # N-Grams
+    df["lex_phishing_bigram_matches"] = df["tmp_concat_subdomains"].apply(find_ngram_matches, args=(_phishing_ngram_aho_corasick_automatons["bigram_freq"],))
+    df["lex_phishing_trigram_matches"] = df["tmp_concat_subdomains"].apply(find_ngram_matches, args=(_phishing_ngram_aho_corasick_automatons["trigram_freq"],))
+    df["lex_phishing_tetragram_matches"] = df["tmp_concat_subdomains"].apply(find_ngram_matches, args=(_phishing_ngram_aho_corasick_automatons["tetragram_freq"],))
+    df["lex_phishing_pentagram_matches"] = df["tmp_concat_subdomains"].apply(find_ngram_matches, args=(_phishing_ngram_aho_corasick_automatons["pentagram_freq"],))
+    df["lex_malware_bigram_matches"] = df["tmp_concat_subdomains"].apply(find_ngram_matches, args=(_malware_ngram_aho_corasick_automatons["bigram_freq"],))
+    df["lex_malware_trigram_matches"] = df["tmp_concat_subdomains"].apply(find_ngram_matches, args=(_malware_ngram_aho_corasick_automatons["trigram_freq"],))
+    df["lex_malware_tetragram_matches"] = df["tmp_concat_subdomains"].apply(find_ngram_matches, args=(_malware_ngram_aho_corasick_automatons["tetragram_freq"],))
+    df["lex_dga_bigram_matches"] = df["tmp_concat_subdomains"].apply(find_ngram_matches, args=(_dga_ngram_aho_corasick_automatons["bigram_freq"],),)
+    df["lex_dga_trigram_matches"] = df["tmp_concat_subdomains"].apply(find_ngram_matches, args=(_dga_ngram_aho_corasick_automatons["trigram_freq"],),)
+    df["lex_dga_tetragram_matches"] = df["tmp_concat_subdomains"].apply(find_ngram_matches, args=(_dga_ngram_aho_corasick_automatons["tetragram_freq"],),)
 
     # Part lengths
     df["tmp_part_lengths"] = df["domain_name"].apply(lambda x: get_lengths_of_parts(x))
@@ -522,7 +553,7 @@ def lex(df: DataFrame) -> DataFrame:
 
     # Ip address in domain
     df["lex_ipv4_in_domain"] = df["domain_name"].apply(lambda x: 1 if contains_ipv4(x) else 0)
-    
+
     # Suffixes
     df["lex_has_trusted_suffix"] = df["domain_name"].apply(lambda x: 1 if has_trusted_suffix(x) else 0)
     df["lex_has_wellknown_suffix"] = df["domain_name"].apply(lambda x: 1 if has_wellknown_suffix(x) else 0)
